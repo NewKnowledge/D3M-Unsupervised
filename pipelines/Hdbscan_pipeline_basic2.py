@@ -20,7 +20,7 @@ pipeline_description.add_step(step_1)
 # Step 2 mapped to operate on a dataset object instead of a dataframe object
 step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.0.produce')
-step_2.add_hyperparameter(name='primative', argument_type=ArgumentType.PRIMATIVE, data=1)
+step_2.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=1)
 step_2.add_output('produce')
 pipeline_description.add_step(step_2)
 
@@ -33,13 +33,14 @@ pipeline_description.add_step(step_3)
 # Step 4 mapped to operate on a dataset object instead of a dataframe object
 step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
 step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.2.produce')
-step_4.add_hyperparameter(name='primative', argument_type=ArgumentType.PRIMATIVE, data=3)
+step_4.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=3)
 step_4.add_output('produce')
 pipeline_description.add_step(step_4)
 
 # Step 5: DISTIL/NK Storc primitive -> unsupervised clustering of records with a label
 step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.hdbscan.Hdbscan'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
+step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
 
