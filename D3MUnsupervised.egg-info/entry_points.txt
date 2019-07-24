@@ -1,4 +1,0 @@
-[d3m.primitives]
-clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan
-clustering.k_means.Sloth = D3MUnsupervised:Storc
-
