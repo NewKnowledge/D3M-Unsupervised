@@ -15,6 +15,7 @@ pipeline_description.add_step(step_0)
 # Step 1: DISTIL/NK Storc primitive -> unsupervised clustering of records with a label
 step_1 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.hdbscan.Hdbscan'))
 step_1.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.0.produce')
+step1.add_hyperparameter(name='long_format', argument_type=ArgumentType.VALUE, data=True)
 step_1.add_output('produce')
 pipeline_description.add_step(step_1)
 
