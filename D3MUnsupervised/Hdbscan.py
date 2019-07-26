@@ -37,10 +37,14 @@ class Hyperparams(hyperparams.Hyperparams):
         description = 'the minimum size of clusters')  
     min_samples = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 5, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
-        description = 'The number of samples in a neighbourhood for a point to be considered a core point.')   
-    long_format = hyperparams.UniformBool(default = False, semantic_types = [
-       'https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-       description="whether the input dataset is already formatted in long format or not")
+        description = 'The number of samples in a neighbourhood for a point to be considered a core point.')
+    long_format = hyperparams.UniformBool(default = False, semantic_types = 
+        ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="whether the input dataset is already formatted in long format or not")
+    cluster_selection_method = hyperparams.Enumeration(default = 'leaf',semantic_types = 
+        ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
+        values = ['leaf','eom'],
+        description = 'Determines how clusters are selected from the cluster hierarchy tree for HDBSCAN')
     pass
 
 class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
@@ -100,7 +104,8 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         self._hp = hp_class.defaults().replace({'file_col_index':1, 'main_resource_index':'learningData'})
 
         if self.hyperparams['algorithm'] == 'HDBSCAN':
-            self.clf = hdbscan.HDBSCAN(min_cluster_size=self.hyperparams['min_cluster_size'],min_samples=self.hyperparams['min_samples'])
+            self.clf = hdbscan.HDBSCAN(min_cluster_size=self.hyperparams['min_cluster_size'],min_samples=self.hyperparams['min_samples'],
+            cluster_selection_method=self.hyperparams['cluster_selection_method'])
         else:
             self.clf = DBSCAN(eps=self.hyperparams['eps'],min_samples=self.hyperparams['min_samples'])
     
@@ -115,7 +120,8 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         Outputs
             The output is a dataframe containing a single column where each entry is the associated series' cluster number.
         """
-
+        print('Code Changed')    
+    
         hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
         metadata_inputs = ds2df_client.produce(inputs = inputs).value
