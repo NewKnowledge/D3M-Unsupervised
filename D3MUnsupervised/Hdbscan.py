@@ -41,7 +41,7 @@ class Hyperparams(hyperparams.Hyperparams):
     long_format = hyperparams.UniformBool(default = False, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description="whether the input dataset is already formatted in long format or not")
-    cluster_selection_method = hyperparams.Enumeration(default = 'leaf',semantic_types = 
+    cluster_selection_method = hyperparams.Enumeration(default = 'eom',semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         values = ['leaf','eom'],
         description = 'Determines how clusters are selected from the cluster hierarchy tree for HDBSCAN')
