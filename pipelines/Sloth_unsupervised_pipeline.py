@@ -27,7 +27,7 @@ step_2.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, d
 step_2.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_2.add_output('produce')
 step_2.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.1.produce')
-pipeline_description.add_step(step_1)
+pipeline_description.add_step(step_2)
 
 # Step 3 column parser -> labeled semantic types to data types
 step_3 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
