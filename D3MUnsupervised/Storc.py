@@ -215,15 +215,6 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
         df_dict_1['length'] = 1        
         sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-        
-        print("Metadata....", sloth_df.metadata)
-        print("")
-        print("df_dict.....", df_dict)
-        print("")
-        print("df_dict1.....", df_dict_1)
-        print("")
-        print("Sloth df", sloth_df)
-        
         if self.clustering:
             return CallResult(sloth_df)
         else:
@@ -232,7 +223,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
 if __name__ == '__main__':
     
     # Load data and preprocessing
-    input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TRAIN/dataset_TRAIN/datasetDoc.json')
+    input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TRAIN/dataset_TRAIN/datasetDoc.json')
     hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     input_dataset = denorm.produce(inputs = input_dataset).value
@@ -241,7 +232,7 @@ if __name__ == '__main__':
     storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':4,'long_format':True}))
     storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
     test_dataset = denorm.produce(inputs = input_dataset).value
     results = storc_client.produce(inputs = test_dataset)
