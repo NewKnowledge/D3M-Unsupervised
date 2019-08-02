@@ -32,7 +32,7 @@ pipeline_description.add_step(step_3)
 
 # Step 4 mapped to operate on a dataset object instead of a dataframe object
 step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
-step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.2.produce')
+step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.3.produce')
 step_4.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=3)
 step_4.add_output('produce')
 pipeline_description.add_step(step_4)
@@ -54,14 +54,14 @@ pipeline_description.add_step(step_5)
 #pipeline_description.add_step(step_6)
 
 # Step 6: construct predictions dataframe in proper format
-step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
-step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-step_6.add_output('produce')
-pipeline_description.add_step(step_6)
+#step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
+#step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
+#step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
+#step_6.add_output('produce')
+#pipeline_description.add_step(step_6)
 
 # Final Output
-pipeline_description.add_output(name='output predictions', data_reference='steps.6.produce')
+pipeline_description.add_output(name='output predictions', data_reference='steps.5.produce')
 
 # Output json pipeline
 blob = pipeline_description.to_json()
