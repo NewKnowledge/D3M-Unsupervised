@@ -202,17 +202,17 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             # first column ('d3mTndex')
 
             col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-            col_dict['structural_type'] = type(1)
+            col_dict['structural_type'] = type("1")
             col_dict['name'] = 'd3mIndex'
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey',)
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
             # second column ('clusters')
-            col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
             col_dict_1['structural_type'] = type(1)
             col_dict_1['name'] = 'cluster_labels'
             col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
-            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict_1)
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict_1)
             
             df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
             df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
