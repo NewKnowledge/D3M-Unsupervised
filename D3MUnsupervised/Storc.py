@@ -163,7 +163,8 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         Returns
         -------
         Outputs
-            The output is a dataframe containing a single column where each entry is the associated series' cluster number.
+            For unsupervised problems: The output is a dataframe containing a single column where each entry is the associated series' cluster number.
+            For semi-supervised problems: The output is the input df containing an additional feature - cluster_label
         """
         hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
@@ -207,11 +208,11 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey',)
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
-            # second column ('clusters')
+            # second column ('Class')
             col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
             col_dict_1['structural_type'] = type("1")
             col_dict_1['name'] = 'Class'
-            col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict_1)
             
             df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))

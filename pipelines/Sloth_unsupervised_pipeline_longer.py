@@ -40,11 +40,11 @@ pipeline_description.add_step(step_4)
 # Step 5: DISTIL/NK Storc primitive -> unsupervised clustering of records with a label (number of clusters set for kmeans algorithm)
 step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.k_means.Sloth'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
+step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, data=20)
 step_5.add_hyperparameter(name='n_init', argument_type= ArgumentType.VALUE, data=20)
 step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
-step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 pipeline_description.add_step(step_5)
 
 # Step 6 column parser -> labeled semantic types to data types
