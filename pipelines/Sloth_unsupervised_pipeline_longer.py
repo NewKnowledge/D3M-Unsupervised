@@ -56,7 +56,7 @@ pipeline_description.add_step(step_5)
 # Step 6: construct predictions dataframe in proper format
 step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
 step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-#step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
+step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
 step_6.add_output('produce')
 pipeline_description.add_step(step_6)
 
