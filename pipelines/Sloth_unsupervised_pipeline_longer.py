@@ -44,7 +44,7 @@ step_5.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, d
 step_5.add_hyperparameter(name='n_init', argument_type= ArgumentType.VALUE, data=20)
 step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
-#step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
+step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 pipeline_description.add_step(step_5)
 
 # Step 6 column parser -> labeled semantic types to data types

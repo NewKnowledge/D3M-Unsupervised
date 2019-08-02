@@ -197,7 +197,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
          
         if self.clustering:
             
-            sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = ['cluster_labels']))
+            sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = ['Class']))
 
             # first column ('d3mTndex')
 
@@ -210,7 +210,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             # second column ('clusters')
             col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
             col_dict_1['structural_type'] = type("1")
-            col_dict_1['name'] = 'cluster_labels'
+            col_dict_1['name'] = 'Class'
             col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict_1)
             
