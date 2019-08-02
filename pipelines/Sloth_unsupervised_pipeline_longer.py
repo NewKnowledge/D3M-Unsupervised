@@ -32,7 +32,7 @@ pipeline_description.add_step(step_3)
 
 # Step 4 mapped to operate on a dataset object instead of a dataframe object
 step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
-step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.3.produce')
+step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.2.produce')
 step_4.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=3)
 step_4.add_output('produce')
 pipeline_description.add_step(step_4)
