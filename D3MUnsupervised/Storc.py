@@ -38,6 +38,9 @@ class Hyperparams(hyperparams.Hyperparams):
     long_format = hyperparams.UniformBool(default = False, semantic_types = [
        'https://metadata.datadrivendiscovery.org/types/ControlParameter'],
        description="whether the input dataset is already formatted in long format or not")
+    n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=10, semantic_types=
+        ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'Number of times the k-means algorithm \
+        will be run with different centroid seeds. Final result will be the best output on n_init consecutive runs in terms of inertia')
     pass
 
 class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
@@ -143,7 +146,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         # load and reshape training data
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
-            self._kmeans = sk_kmeans(n_clusters = self.hyperparams['nclusters'], random_state=self.random_seed)
+            self._kmeans = sk_kmeans(n_clusters = self.hyperparams['nclusters'], n_init = self.hyperparams['n_init'], random_state=self.random_seed)
             self._X_train_all_data = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
             self._X_train = self._X_train_all_data.drop(columns = target_names).values
         else:
@@ -253,7 +256,7 @@ if __name__ == '__main__':
     input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':True}))
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':True, 'n_init':25}))
     storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
