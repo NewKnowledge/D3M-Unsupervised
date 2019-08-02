@@ -191,8 +191,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz, 1)       
         
         # special semi-supervised case - during training, only produce rows with labels
-        
-        clustering = 0 
+         
         if self.clustering:
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.labels_, columns = ['cluster_labels']))
         else:
