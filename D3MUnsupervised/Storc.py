@@ -231,7 +231,8 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
                 X_test = X_test[np.flatnonzero(series)]
         
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
-        # add clusters as a feature in the main dataframe - last column ('clusters')
+
+            # add clusters as a feature in the main dataframe - last column ('clusters')
             col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type(1)
             col_dict['name'] = 'cluster_labels'
