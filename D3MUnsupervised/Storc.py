@@ -195,6 +195,32 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         if self.clustering:
             
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = ['cluster_labels']))
+
+            # first column ('d3mTndex')
+
+            col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict['structural_type'] = type(1)
+            col_dict['name'] = 'd3mIndex'
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey',)
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+
+            # second column ('clusters')
+            col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict_1['structural_type'] = type(1)
+            col_dict_1['name'] = 'cluster_labels'
+            col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict_1)
+            
+            df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = 1        
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+
+            return CallResult(sloth_df)
+
         else:
             series = metadata_inputs[target_names] != ''
             if series.any().any():
@@ -202,22 +228,20 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
                 X_test = X_test[np.flatnonzero(series)]
         
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
-        # last column ('clusters')
-        col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-        col_dict['structural_type'] = type(1)
-        col_dict['name'] = 'cluster_labels'
-        col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute', 'https://metadata.datadrivendiscovery.org/types/CategoricalData')
-        sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
-        df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
-        df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
-        df_dict['dimension'] = df_dict_1
-        df_dict_1['name'] = 'columns'
-        df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-        df_dict_1['length'] = 1        
-        sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-        if self.clustering:
-            return CallResult(sloth_df)
-        else:
+        # add clusters as a feature in the main dataframe - last column ('clusters')
+            col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict['structural_type'] = type(1)
+            col_dict['name'] = 'cluster_labels'
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute', 'https://metadata.datadrivendiscovery.org/types/CategoricalData')
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+            df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = 1        
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+       
             return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
 
 if __name__ == '__main__':
@@ -229,7 +253,7 @@ if __name__ == '__main__':
     input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':4,'long_format':True}))
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':True}))
     storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
