@@ -195,10 +195,11 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz, 1)       
         
         # special semi-supervised case - during training, only produce rows with labels
-         
         if self.clustering:
             
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = ['Class']))
+
+            sloth_df = pandas.concat([formatted_inputs.d3mIndex, sloth_df], axis=1)
 
             # first column ('d3mTndex')
 
@@ -209,18 +210,18 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
             # second column ('Class')
-            col_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-            col_dict_1['structural_type'] = type("1")
-            col_dict_1['name'] = 'Class'
-            col_dict_1['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
-            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict_1)
+            col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
+            col_dict['structural_type'] = type("1")
+            col_dict['name'] = 'Class'
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
             
             df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
             df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
             df_dict['dimension'] = df_dict_1
             df_dict_1['name'] = 'columns'
             df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-            df_dict_1['length'] = 2        
+            df_dict_1['length'] = 2         
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
 
             return CallResult(sloth_df)
