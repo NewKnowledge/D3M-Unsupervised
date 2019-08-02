@@ -176,7 +176,9 @@ if __name__ == '__main__':
 
     # Load data and preprocessing
     hyperparams_class = Hdbscan.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults())
-    test_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/66_chlorineConcentration/TEST/dataset_TEST/datasetDoc.json')
+    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
+    print(filepath)
+    test_dataset = container.Dataset.load(filepath)
     results = hdbscan_client.produce(inputs = test_dataset)
     print(results.value)
