@@ -187,11 +187,15 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         
         # special semi-supervised case - during training, only produce rows with labels
         series = metadata_inputs[target_names] != ''
-        if series.any().any():
+        clustering = 0 
+        if not series.any().any():
+            clustering = 1
+            sloth_df = d3m_DataFrame(pandas.DataFrame(self.labels_, columns = ['cluster_labels']))
+        else:
             metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
         
-        sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
+            sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
         # last column ('clusters')
         col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
         col_dict['structural_type'] = type(1)
@@ -206,7 +210,18 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         df_dict_1['length'] = 1        
         sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
         
-        return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
+        print("Metadata....", sloth_df.metadata)
+        print("")
+        print("df_dict.....", df_dict)
+        print("")
+        print("df_dict1.....", df_dict_1)
+        print("")
+        print("Sloth df", sloth_df)
+        
+        if clustering:
+            return CallResult(sloth_df)
+        else:
+            return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
 
 if __name__ == '__main__':
     
