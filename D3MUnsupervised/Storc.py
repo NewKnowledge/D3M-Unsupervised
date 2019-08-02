@@ -135,6 +135,11 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
         
+        series = metadata_inputs[target_names] != ''
+        self.clustering = 0 
+        if not series.any().any():
+            self.clustering = 1
+
         # load and reshape training data
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -186,12 +191,12 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz, 1)       
         
         # special semi-supervised case - during training, only produce rows with labels
-        series = metadata_inputs[target_names] != ''
+        
         clustering = 0 
-        if not series.any().any():
-            clustering = 1
+        if self.clustering:
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.labels_, columns = ['cluster_labels']))
         else:
+            series = metadata_inputs[target_names] != ''
             metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
         
@@ -218,7 +223,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         print("")
         print("Sloth df", sloth_df)
         
-        if clustering:
+        if self.clustering:
             return CallResult(sloth_df)
         else:
             return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
