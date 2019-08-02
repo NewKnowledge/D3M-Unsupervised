@@ -219,7 +219,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             df_dict['dimension'] = df_dict_1
             df_dict_1['name'] = 'columns'
             df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-            df_dict_1['length'] = 1        
+            df_dict_1['length'] = 2        
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
 
             return CallResult(sloth_df)
