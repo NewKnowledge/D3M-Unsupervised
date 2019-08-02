@@ -41,24 +41,11 @@ pipeline_description.add_step(step_4)
 step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.k_means.Sloth'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
-step_5.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, data=20)
+step_5.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, data=100)
 step_5.add_hyperparameter(name='n_init', argument_type= ArgumentType.VALUE, data=20)
 step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
-
-# Step 6 column parser -> labeled semantic types to data types
-#step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
-#step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-#step_6.add_output('produce')
-#pipeline_description.add_step(step_6)
-
-# Step 6: construct predictions dataframe in proper format
-#step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
-#step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-#step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
-#step_6.add_output('produce')
-#pipeline_description.add_step(step_6)
 
 # Final Output
 pipeline_description.add_output(name='output predictions', data_reference='steps.5.produce')
