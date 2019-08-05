@@ -140,7 +140,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         col_names = ['dim_'+ str(c) for c in range(0,n_components)]
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns=[col_names]))
-        tsne_df = pandas.concat([formatted_inputs[['d3mIndex','Class']], tsne_df], axis=1) #change this to point at index and target once this is running
+        tsne_df = pandas.concat([formatted_inputs['d3mIndex'],formatted_inputs[target_names], tsne_df], axis=1) #change this to point at index and target once this is running
         
 
         col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
+    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
