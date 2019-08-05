@@ -13,7 +13,7 @@ from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
-from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils
+from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
 from .timeseries_formatter import TimeSeriesFormatterPrimitive
 
 __author__ = 'Distil'
@@ -154,7 +154,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         if series.any().any():
             metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
-        
+        print(X_test)
         sloth_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=['cluster_labels']))
         # last column ('clusters')
         col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
@@ -175,10 +175,15 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 if __name__ == '__main__':
 
     # Load data and preprocessing
+    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+    
     hyperparams_class = Hdbscan.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
+    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
+    test_dataset = denorm.produce(inputs = test_dataset).value
     results = hdbscan_client.produce(inputs = test_dataset)
     print(results.value)
+

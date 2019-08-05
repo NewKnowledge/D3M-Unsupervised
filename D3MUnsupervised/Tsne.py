@@ -112,7 +112,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         if not self.hyperparams['long_format']:
             formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
         else:
-            formatted_inputs = ds2df_client.produce(inputs = inputs).value 
+            formatted_inputs = d3m_DataFrame(ds2df_client.produce(inputs = inputs).value)        
 
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
@@ -123,9 +123,6 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
 
-        print("index:", index)
-        print("targets:", targets)
-        print("target names:", target_names)
         # parse values from output of time series formatter
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -137,8 +134,8 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         # fit_transform data and create new dataframe
         n_components = self.hyperparams['n_components']
-
         col_names = ['dim_'+ str(c) for c in range(0,n_components)]
+
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns=[col_names]))
         tsne_df = pandas.concat([formatted_inputs['d3mIndex'],formatted_inputs[target_names], tsne_df], axis=1) #change this to point at index and target once this is running
         
@@ -182,7 +179,7 @@ if __name__ == '__main__':
     
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
     tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
     test_dataset = denorm.produce(inputs = test_dataset).value
