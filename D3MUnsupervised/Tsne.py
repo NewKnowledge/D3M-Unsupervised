@@ -12,7 +12,8 @@ from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
-from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils
+from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
+
 from .timeseries_formatter import TimeSeriesFormatterPrimitive
 
 __author__ = 'Distil'
@@ -87,7 +88,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         hp_class = TimeSeriesFormatterPrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         self._hp = hp_class.defaults().replace({'file_col_index':1, 'main_resource_index':'learningData'})
-
+    
         self.clf = TSNE(n_components = self.hyperparams['n_components'],random_state=self.random_seed)
 
 
@@ -111,7 +112,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         if not self.hyperparams['long_format']:
             formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
         else:
-            formatted_inputs = d3m_DataFrame(ds2df_client.produce(inputs = inputs).value)        
+            formatted_inputs = ds2df_client.produce(inputs = inputs).value 
 
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
@@ -122,6 +123,9 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
 
+        print("index:", index)
+        print("targets:", targets)
+        print("target names:", target_names)
         # parse values from output of time series formatter
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -172,10 +176,15 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 if __name__ == '__main__':
 
     # Load data and preprocessing
+    
+    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+    
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
+    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
+    test_dataset = denorm.produce(inputs = test_dataset).value
     results = tsne_client.produce(inputs = test_dataset)
     print(results.value)
