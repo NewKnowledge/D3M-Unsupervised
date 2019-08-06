@@ -14,7 +14,7 @@ setup(name='D3MUnsupervised',
         'd3m.primitives': [
             'clustering.k_means.Sloth = D3MUnsupervised:Storc',
             'clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan'
-            'feature_selection.tsne.Tsne = D3MUnsupervised:Tsne',
+            'feature_selection.dimensionality_reduction.Tsne = D3MUnsupervised:Tsne',
         ],
     },
 )
