@@ -74,13 +74,13 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
              ),
         }],
         # The same path the primitive is registered with entry points in setup.py.
-        'python_path': 'd3m.primitives.feature_selection.dimensionality_reduction.Tsne',
+        'python_path': 'd3m.primitives.dimensionality_reduction.t_distributed_stochastic_neighbor_embedding.Tsne',
         # Choose these from a controlled vocabulary in the schema. If anything is missing which would
         # best describe the primitive, make a merge request.
         'algorithm_types': [
             metadata_base.PrimitiveAlgorithmType.T_DISTRIBUTED_STOCHASTIC_NEIGHBOR_EMBEDDING,
         ],
-        'primitive_family': metadata_base.PrimitiveFamily.FEATURE_SELECTION,
+        'primitive_family': metadata_base.PrimitiveFamily.DIMENSIONALITY_REDUCTION,
     })
 
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0)-> None:
