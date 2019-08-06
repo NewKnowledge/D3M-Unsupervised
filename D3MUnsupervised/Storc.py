@@ -175,7 +175,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
         else:
             formatted_inputs = ds2df_client.produce(inputs = inputs).value 
-
+        
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
@@ -184,7 +184,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-
+        
         # load and reshape training data
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -253,18 +253,18 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
 if __name__ == '__main__':
     
     # Load data and preprocessing
-    input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TRAIN/dataset_TRAIN/datasetDoc.json')
+    input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TRAIN/dataset_TRAIN/datasetDoc.json')
     hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':True, 'n_init':25}))
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':False, 'n_init':25}))
     storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
-    test_dataset = denorm.produce(inputs = input_dataset).value
+    test_dataset = denorm.produce(inputs = test_dataset).value
     results = storc_client.produce(inputs = test_dataset)
     print(results.value)
     

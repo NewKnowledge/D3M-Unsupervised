@@ -113,7 +113,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
         else:
             formatted_inputs = d3m_DataFrame(ds2df_client.produce(inputs = inputs).value)        
-
+        
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
@@ -122,7 +122,8 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-
+        index_names = [list(metadata_inputs)[i] for i in index]
+        
         # parse values from output of time series formatter
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -137,26 +138,11 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         col_names = ['dim_'+ str(c) for c in range(0,n_components)]
 
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns=[col_names]))
-        tsne_df = pandas.concat([formatted_inputs['d3mIndex'],formatted_inputs[target_names], tsne_df], axis=1) #change this to point at index and target once this is running
-        
-
-        col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-        col_dict['structural_type'] = type("1")
-        col_dict['name'] = 'd3mIndex'
-        col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-        tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
-
-        col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-        col_dict['structural_type'] = type("1")
-        col_dict['name'] = 'd3mIndex'
-        col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
-        tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
-
-        
-        for c in range(2,n_components+2):
+                      
+        for c in range(0,n_components):
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
             col_dict['structural_type'] = type(1)
-            col_dict['name'] = ('dim_' + str(c-2))
+            col_dict['name'] = ('dim_' + str(c))
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
 
@@ -165,10 +151,12 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         df_dict['dimension'] = df_dict_1
         df_dict_1['name'] = 'columns'
         df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-        df_dict_1['length'] = (n_components+2)        
+        df_dict_1['length'] = (n_components)        
         tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-        
-        return CallResult(tsne_df)
+        if not self.hyperparams['long_format']:
+            return CallResult(utils_cp.append_columns(metadata_inputs, tsne_df))
+        else:
+            return CallResult(utils_cp.append_columns(metadata_inputs[index_names + target_names], tsne_df))
 
 if __name__ == '__main__':
 
@@ -178,8 +166,8 @@ if __name__ == '__main__':
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
+    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
     test_dataset = denorm.produce(inputs = test_dataset).value
