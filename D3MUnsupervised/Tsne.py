@@ -48,7 +48,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         'version': __version__,
         'name': "tsne",
         # Keywords do not have a controlled vocabulary. Authors can put here whatever they find suitable.
-        'keywords': ['Time Series', 'Clustering', 'Dimensionality Reduction'],
+        'keywords': ['Time Series', 'Dimensionality Reduction'],
         'source': {
             'name': __author__,
             'contact': __contact__,
@@ -74,13 +74,13 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
              ),
         }],
         # The same path the primitive is registered with entry points in setup.py.
-        'python_path': 'd3m.primitives.clustering.hdbscan.Hdbscan',
+        'python_path': 'd3m.primitives.feature_selection.tsne.Tsne',
         # Choose these from a controlled vocabulary in the schema. If anything is missing which would
         # best describe the primitive, make a merge request.
         'algorithm_types': [
             metadata_base.PrimitiveAlgorithmType.T_DISTRIBUTED_STOCHASTIC_NEIGHBOR_EMBEDDING,
         ],
-        'primitive_family': metadata_base.PrimitiveFamily.CLUSTERING,
+        'primitive_family': metadata_base.PrimitiveFamily.FEATURE_SELECTION,
     })
 
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0)-> None:
