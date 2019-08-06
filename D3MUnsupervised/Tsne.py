@@ -102,6 +102,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         ----------
         Outputs
             The output is a transformed dataframe of X fit into an embedded space, n feature columns will equal n_components hyperparameter
+            For timeseries datasets the output is the dimensions concatenated to the timeseries filename dataframe
         """ 
     
         hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
@@ -166,8 +167,8 @@ if __name__ == '__main__':
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TEST/dataset_TEST/datasetDoc.json'
+    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
     test_dataset = denorm.produce(inputs = test_dataset).value

@@ -169,7 +169,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
         df_dict_1['length'] = 1        
         sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-        
+    
         return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
 
 if __name__ == '__main__':
