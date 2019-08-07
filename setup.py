@@ -13,7 +13,7 @@ setup(name='D3MUnsupervised',
     entry_points = {
         'd3m.primitives': [
             'clustering.k_means.Sloth = D3MUnsupervised:Storc',
-            'clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan'
+            'clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan',
             'dimensionality_reduction.tsne.Tsne = D3MUnsupervised:Tsne',
         ],
     },
