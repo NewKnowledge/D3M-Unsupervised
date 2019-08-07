@@ -24,7 +24,7 @@ Inputs = container.dataset.Dataset
 Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
-    n_components = hyperparams.UniformInt(lower=1, upper=3, default = 2, semantic_types = 
+    n_components = hyperparams.UniformInt(lower=1, upper=4, default = 2, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'dimension of the embedded space')  
     
@@ -74,7 +74,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
              ),
         }],
         # The same path the primitive is registered with entry points in setup.py.
-        'python_path': 'd3m.primitives.dimensionality_reduction.tsne.Tsne',
+        'python_path': 'd3m.primitives.dimensionality_reduction.t_distributed_stochastic_neighnor_embedding.Tsne',
         # Choose these from a controlled vocabulary in the schema. If anything is missing which would
         # best describe the primitive, make a merge request.
         'algorithm_types': [
