@@ -125,7 +125,10 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
         index_names = [list(metadata_inputs)[i] for i in index]
-        
+        #print(metadata_inputs)
+        #print(metadata_inputs[target_names])
+        #print(metadata_inputs[index_names])
+        #print(metadata_inputs[index_names+target_names])
         # parse values from output of time series formatter
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -137,29 +140,31 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         # fit_transform data and create new dataframe
         n_components = self.hyperparams['n_components']
-        col_names = ['dim'+ str(c) for c in range(0,n_components)]
+        col_names = ['Dim'+ str(c) for c in range(0,n_components)]
 
-        tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns=[col_names]))
-                
+        tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test)))
+              
         for c in range(0,n_components):
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
-            col_dict['structural_type'] = type("1")
-            col_dict['name'] = 'dim' + str(c)
-            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
+            col_dict['structural_type'] = type('1')
+            col_dict['name'] = str(c)
+            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
-
+        
         df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
         df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
         df_dict['dimension'] = df_dict_1
         df_dict_1['name'] = 'columns'
         df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-        df_dict_1['length'] = (n_components)        
+        df_dict_1['length'] = n_components      
         tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
         
         if not self.hyperparams['long_format']:
-            return CallResult(utils_cp.append_columns(metadata_inputs, tsne_df))
+            
+            return CallResult(pandas.concat([metadata_inputs, tsne_df], axis =1))
         else:
-            return CallResult(utils_cp.append_columns(metadata_inputs[index_names+target_names], tsne_df))
+                
+            return CallResult(pandas.concat([metadata_inputs[index_names+target_names], tsne_df], axis =1))
 
 if __name__ == '__main__':
 
@@ -169,7 +174,7 @@ if __name__ == '__main__':
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'long_format':True}))
+    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'n_components': 3, 'long_format':True}))
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     print(filepath)
     test_dataset = container.Dataset.load(filepath)
