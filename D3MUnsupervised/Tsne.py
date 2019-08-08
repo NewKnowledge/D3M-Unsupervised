@@ -125,11 +125,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
         index_names = [list(metadata_inputs)[i] for i in index]
-        #print(metadata_inputs)
-        #print(metadata_inputs[target_names])
-        #print(metadata_inputs[index_names])
-        #print(metadata_inputs[index_names+target_names])
-        # parse values from output of time series formatter
+        
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
             X_test = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
@@ -142,29 +138,61 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         n_components = self.hyperparams['n_components']
         col_names = ['Dim'+ str(c) for c in range(0,n_components)]
 
-        tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test)))
-              
-        for c in range(0,n_components):
-            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
-            col_dict['structural_type'] = type('1')
-            col_dict['name'] = str(c)
-            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
-            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
-        
-        df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
-        df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
-        df_dict['dimension'] = df_dict_1
-        df_dict_1['name'] = 'columns'
-        df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-        df_dict_1['length'] = n_components      
-        tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-        
-        if not self.hyperparams['long_format']:
+        tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns = col_names))
+        if self.hyperparams['long_format']:
+            tsne_df = pandas.concat([formatted_inputs.d3mIndex,formatted_inputs[target_names], tsne_df], axis=1)
             
-            return CallResult(pandas.concat([metadata_inputs, tsne_df], axis =1))
+            # add index colmn metadata
+            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict['structural_type'] = type('1')
+            col_dict['name'] = 'd3mIndex'
+            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+
+            #add predicted target columns metadata, this is assuming there is only 1 target column
+            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
+            col_dict['structural_type'] = type('1')
+            col_dict['name'] = target_names
+            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
+        
+            # add dimenion columns metadata
+            for c in range(2,n_components+2):
+                col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
+                col_dict['structural_type'] = type('1')
+                col_dict['name'] = 'Dim'+str(c-2)
+                col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
+                tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
+        
+            df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = n_components+2      
+            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+
+            return CallResult(tsne_df)
+
         else:
+            for c in range(0,n_components):
+                col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
+                col_dict['structural_type'] = type('1')
+                col_dict['name'] = str(c)
+                col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
+                tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
+        
+            df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = n_components      
+            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+            
+            return CallResult(utils_cp.append_columns(metadata_inputs, tsne_df))
                 
-            return CallResult(pandas.concat([metadata_inputs[index_names+target_names], tsne_df], axis =1))
+            
 
 if __name__ == '__main__':
 
