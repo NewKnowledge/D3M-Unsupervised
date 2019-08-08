@@ -108,6 +108,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
         metadata_inputs = ds2df_client.produce(inputs = inputs).value
+
         
         # temporary (until Uncharted adds conversion primitive to repo)
         if not self.hyperparams['long_format']:
@@ -136,14 +137,14 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         # fit_transform data and create new dataframe
         n_components = self.hyperparams['n_components']
-        col_names = ['dim_'+ str(c) for c in range(0,n_components)]
+        col_names = ['dim'+ str(c) for c in range(0,n_components)]
 
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns=[col_names]))
-                      
+                
         for c in range(0,n_components):
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
-            col_dict['structural_type'] = type(1)
-            col_dict['name'] = ('dim_' + str(c))
+            col_dict['structural_type'] = type("1")
+            col_dict['name'] = 'dim' + str(c)
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
 
@@ -154,10 +155,11 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
         df_dict_1['length'] = (n_components)        
         tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+        
         if not self.hyperparams['long_format']:
             return CallResult(utils_cp.append_columns(metadata_inputs, tsne_df))
         else:
-            return CallResult(utils_cp.append_columns(metadata_inputs[index_names + target_names], tsne_df))
+            return CallResult(utils_cp.append_columns(metadata_inputs[index_names+target_names], tsne_df))
 
 if __name__ == '__main__':
 
