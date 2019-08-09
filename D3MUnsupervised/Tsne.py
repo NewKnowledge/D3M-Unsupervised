@@ -35,12 +35,11 @@ class Hyperparams(hyperparams.Hyperparams):
 
 class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     '''
-        Primitive that applies Hierarchical Density-Based Clustering or Density-Based Clustering 
-        algorithms to time series data. This is an unsupervised, clustering primitive, but has been
-        representend as a supervised classification problem to produce a compliant primitive. 
-
+        Primitive that applies the T-distributed stochastic neighbour embedding algorith to time series,
+        unsupervised, supervised or semi-supervised datasets. 
+        
         Training inputs: D3M dataset with features and labels, and D3M indices
-        Outputs: D3M dataset with predicted labels and D3M indices
+        Outputs: D3M dataframe with predicted labels and D3M indices
     '''
     metadata = metadata_base.PrimitiveMetadata({
         # Simply an UUID generated once and fixed forever. Generated using "uuid.uuid4()".

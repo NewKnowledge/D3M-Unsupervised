@@ -41,17 +41,15 @@ pipeline_description.add_step(step_4)
 step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.dimensionality_reduction.t_distributed_stochastic_neighbor_embedding.Tsne'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_hyperparameter(name='n_components', argument_type=ArgumentType.VALUE,data=1)
-step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
 
 # Step 7: DISTIL/NK Storc primitive -> unsupervised clustering, n_clusters set for kmeans
-step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.k_means.Sloth'))
+step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.k_means.Common'))
 step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_6.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_6.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, data=100)
 step_6.add_hyperparameter(name='n_init', argument_type= ArgumentType.VALUE, data=20)
-step_6.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_6.add_output('produce')
 pipeline_description.add_step(step_6)
 
