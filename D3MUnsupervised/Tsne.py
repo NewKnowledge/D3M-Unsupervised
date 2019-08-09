@@ -139,11 +139,11 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns = col_names))
         if self.hyperparams['long_format']:
-            tsne_df = pandas.concat([formatted_inputs.d3mIndex,formatted_inputs[target_names[0]], tsne_df], axis=1)
+            tsne_df = pandas.concat([formatted_inputs.d3mIndex, tsne_df], axis=1)
             
             # add index colmn metadata
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-            col_dict['structural_type'] = type(1)
+            col_dict['structural_type'] = type('1')
             col_dict['name'] = 'd3mIndex'
             col_dict['semantic_types'] = ('http://schema.org/Int', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
@@ -156,19 +156,12 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                 col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
                 tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
 
-            #add predicted target columns metadata, this is assuming there is only 1 target column
-            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, n_components+2)))
-            col_dict['structural_type'] = type('1')
-            col_dict['name'] = target_names[0]
-            col_dict['semantic_types'] = ('http://schema.org/String', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
-            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, n_components+2), col_dict)
-        
             df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
             df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
             df_dict['dimension'] = df_dict_1
             df_dict_1['name'] = 'columns'
             df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-            df_dict_1['length'] = n_components+2      
+            df_dict_1['length'] = n_components+1      
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
 
             return CallResult(tsne_df)
