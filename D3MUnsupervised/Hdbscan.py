@@ -20,7 +20,7 @@ __author__ = 'Distil'
 __version__ = '1.0.2'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
-Inputs = container.dataset.Dataset
+Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
@@ -38,9 +38,6 @@ class Hyperparams(hyperparams.Hyperparams):
     min_samples = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 5, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'The number of samples in a neighbourhood for a point to be considered a core point.')
-    long_format = hyperparams.UniformBool(default = False, semantic_types = 
-        ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description="whether the input dataset is already formatted in long format or not")
     cluster_selection_method = hyperparams.Enumeration(default = 'eom',semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         values = ['leaf','eom'],
@@ -62,7 +59,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         'version': __version__,
         'name': "hdbscan",
         # Keywords do not have a controlled vocabulary. Authors can put here whatever they find suitable.
-        'keywords': ['Time Series'],
+        'keywords': ['Clustering'],
         'source': {
             'name': __author__,
             'contact': __contact__,
@@ -100,9 +97,6 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0)-> None:
         super().__init__(hyperparams=hyperparams, random_seed=random_seed)
 
-        hp_class = TimeSeriesFormatterPrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        self._hp = hp_class.defaults().replace({'file_col_index':1, 'main_resource_index':'learningData'})
-
         if self.hyperparams['algorithm'] == 'HDBSCAN':
             self.clf = hdbscan.HDBSCAN(min_cluster_size=self.hyperparams['min_cluster_size'],min_samples=self.hyperparams['min_samples'],
             cluster_selection_method=self.hyperparams['cluster_selection_method'])
@@ -113,48 +107,33 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         """
         Parameters
         ----------
-        inputs : numpy ndarray of size (number_of_time_series, time_series_length) containing new time series 
+        inputs : dataframe with attached metadata for semi-supervised or unsupervised data
 
         Returns
         ----------
         Outputs
             The output is a dataframe containing a single column where each entry is the associated series' cluster number.
         """ 
-    
-        hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-        metadata_inputs = ds2df_client.produce(inputs = inputs).value
         
-        # temporary (until Uncharted adds conversion primitive to repo)
-        if not self.hyperparams['long_format']:
-            formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
-        else:
-            formatted_inputs = d3m_DataFrame(ds2df_client.produce(inputs = inputs).value)        
-
-        # store information on target, index variable
-        targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+        # find target and index variables
+        targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
-        target_names = [list(metadata_inputs)[t] for t in targets]
-        index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-
-        # parse values from output of time series formatter
-        n_ts = len(formatted_inputs.d3mIndex.unique())
-        if n_ts == formatted_inputs.shape[0]:
-            X_test = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
-            X_test = X_test.drop(columns = target_names).values
-        else:
-            ts_sz = int(formatted_inputs.shape[0] / n_ts)
-            X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz)
+            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
+        target_names = [list(inputs)[t] for t in targets]
+        index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+     
+        X_test = inputs.drop(columns = list(inputs)[index[0]])
+        X_test = X_test.drop(columns = target_names).values
+        
 
         # special semi-supervised case - during training, only produce rows with labels
-        series = metadata_inputs[target_names] != ''
+        series = inputs[target_names] != ''
         if series.any().any():
-            metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
+            inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
-        print(X_test)
+
         sloth_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=['cluster_labels']))
         # last column ('clusters')
         col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
@@ -170,7 +149,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         df_dict_1['length'] = 1        
         sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
     
-        return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
+        return CallResult(utils_cp.append_columns(inputs, sloth_df))
 
 if __name__ == '__main__':
 
@@ -179,11 +158,17 @@ if __name__ == '__main__':
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
     hyperparams_class = Hdbscan.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults().replace({'long_format':False}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/LL1_FordA/TEST/dataset_TEST/datasetDoc.json'
-    print(filepath)
+    hdbscan_client = Hdbscan(hyperparams=hyperparams_class.defaults().replace({"cluster_selection_method":"eom"}))
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_current/SEMI_1040_sylva_prior/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
-    test_dataset = denorm.produce(inputs = test_dataset).value
-    results = hdbscan_client.produce(inputs = test_dataset)
+    #read dataset into dataframe
+    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+    test_dataframe = d3m_DataFrame(ds2df_client.produce(inputs = test_dataset).value)   
+    #print(test_dataframe)
+    
+    #test_dataframetest_dataset = denorm.produce(inputs = test_dataframe).value
+    results = hdbscan_client.produce(inputs = test_dataframe)
+    print(type(results.value))
     print(results.value)
 
