@@ -42,6 +42,11 @@ class Hyperparams(hyperparams.Hyperparams):
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         values = ['leaf','eom'],
         description = 'Determines how clusters are selected from the cluster hierarchy tree for HDBSCAN')
+    required_output = hyperparams.Enumeration(default = 'feature',semantic_types = 
+        ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        values = ['prediction','feature'],
+        description = 'Determines whether the output is a dataframe with just predictions,\
+            or an additional feature added to the input dataframe.') 
     pass
 
 class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
@@ -129,27 +134,59 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         
 
         # special semi-supervised case - during training, only produce rows with labels
-        series = inputs[target_names] != ''
-        if series.any().any():
-            inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
-            X_test = X_test[np.flatnonzero(series)]
+        #series = inputs[target_names] != ''
+        #if series.any().any():
+        #    inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
+        #    X_test = X_test[np.flatnonzero(series)]
 
-        sloth_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=['cluster_labels']))
-        # last column ('clusters')
-        col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-        col_dict['structural_type'] = type(1)
-        col_dict['name'] = 'cluster_labels'
-        col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute', 'https://metadata.datadrivendiscovery.org/types/CategoricalData')
-        sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
-        df_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
-        df_dict_1 = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
-        df_dict['dimension'] = df_dict_1
-        df_dict_1['name'] = 'columns'
-        df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-        df_dict_1['length'] = 1        
-        sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-    
-        return CallResult(utils_cp.append_columns(inputs, sloth_df))
+        
+        
+        if self.hyperparams['required_output'] == 'feature':
+
+            hdb_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=['cluster_labels']))
+
+            # just add last column of last column ('clusters')
+            col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict['structural_type'] = type(1)
+            col_dict['name'] = 'cluster_labels'
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
+            hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+            df_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = 1        
+            hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+                
+            return CallResult(utils_cp.append_columns(inputs, hdb_df))
+        else:
+            
+            hdb_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=[target_names[0]]))
+
+            hdb_df = pandas.concat([inputs.d3mIndex, hdb_df], axis=1)
+
+            col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+            col_dict['structural_type'] = type(1)
+            col_dict['name'] = 'd3mIndex'
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+            hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+            
+            col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
+            col_dict['structural_type'] = type(1)
+            col_dict['name'] = str(target_names[0])
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
+            
+            df_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+            df_dict_1 = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+            df_dict['dimension'] = df_dict_1
+            df_dict_1['name'] = 'columns'
+            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+            df_dict_1['length'] = 2        
+            hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+
+            return CallResult(hdb_df)
 
 if __name__ == '__main__':
 
