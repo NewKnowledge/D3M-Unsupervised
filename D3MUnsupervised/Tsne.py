@@ -24,7 +24,7 @@ Inputs = container.dataset.Dataset
 Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
-    n_components = hyperparams.UniformInt(lower=1, upper=4, default = 2, semantic_types = 
+    n_components = hyperparams.UniformInt(lower=1, upper=3, upper_inclusive = True, default = 2, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'dimension of the embedded space')  
     
@@ -39,7 +39,9 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         unsupervised, supervised or semi-supervised datasets. 
         
         Training inputs: D3M dataset with features and labels, and D3M indices
-        Outputs: D3M dataframe with predicted labels and D3M indices
+
+        Outputs:For time series data, a dataframe of the inputs with t-SNE dimension columns appended 
+                For everything else - D3M dataframe with t-SNE dimensions and D3M indices
     '''
     metadata = metadata_base.PrimitiveMetadata({
         # Simply an UUID generated once and fixed forever. Generated using "uuid.uuid4()".
