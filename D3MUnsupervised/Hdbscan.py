@@ -132,7 +132,11 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         X_test = inputs.drop(columns = list(inputs)[index[0]])
         X_test = X_test.drop(columns = target_names).values
         
-
+        # special semi-supervised case - during training, only produce rows with labels
+        series = inputs[target_names] != ''
+        if series.any().any():
+            inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
+            X_test = X_test[np.flatnonzero(series)]
         
         
         if self.hyperparams['required_output'] == 'feature':
