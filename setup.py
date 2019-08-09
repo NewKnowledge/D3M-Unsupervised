@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(name='D3MUnsupervised',
     version='1.0.0',
-    description='Two wrappers for unsupervised clustering algorithms',
+    description='Two wrappers for unsupervised clustering algorithms, one wrapper for t-SNE',
     packages=['D3MUnsupervised'],
     install_requires=["typing",
                       "numpy == 1.15.4",
@@ -14,6 +14,7 @@ setup(name='D3MUnsupervised',
         'd3m.primitives': [
             'clustering.k_means.Sloth = D3MUnsupervised:Storc',
             'clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan',
+            'dimensionality_reduction.t_distributed_stochastic_neighbor_embedding.Tsne = D3MUnsupervised:Tsne',
         ],
     },
 )
