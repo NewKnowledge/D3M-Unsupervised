@@ -143,25 +143,25 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             
             # add index colmn metadata
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-            col_dict['structural_type'] = type('1')
+            col_dict['structural_type'] = type(1)
             col_dict['name'] = 'd3mIndex'
-            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+            col_dict['semantic_types'] = ('http://schema.org/Int', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
-            #add predicted target columns metadata, this is assuming there is only 1 target column
-            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-            col_dict['structural_type'] = type('1')
-            col_dict['name'] = target_names[0]
-            col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
-            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
-        
             # add dimenion columns metadata
-            for c in range(2,n_components+2):
+            for c in range(1,n_components+1):
                 col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, c)))
-                col_dict['structural_type'] = type('1')
-                col_dict['name'] = 'Dim'+str(c-2)
+                col_dict['structural_type'] = type(1.0)
+                col_dict['name'] = 'Dim'+str(c-1)
                 col_dict['semantic_types'] = ('http://schema.org/Float', 'https://metadata.datadrivendiscovery.org/types/Attribute')
                 tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, c), col_dict)
+
+            #add predicted target columns metadata, this is assuming there is only 1 target column
+            col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, n_components+2)))
+            col_dict['structural_type'] = type('1')
+            col_dict['name'] = target_names[0]
+            col_dict['semantic_types'] = ('http://schema.org/String', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+            tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, n_components+2), col_dict)
         
             df_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
             df_dict_1 = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
