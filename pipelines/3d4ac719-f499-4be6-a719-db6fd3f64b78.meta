@@ -1,0 +1,1 @@
+{"problem": "SEMI_1217_click_prediction_small_problem","full_inputs": ["SEMI_1217_click_prediction_small_dataset"],"train_inputs": ["SEMI_1217_click_prediction_small_dataset_TRAIN"],"test_inputs": ["SEMI_1217_click_prediction_small_dataset_TEST"],"score_inputs": ["SEMI_1217_click_prediction_small_dataset_SCORE"]}
