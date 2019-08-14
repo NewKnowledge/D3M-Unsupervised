@@ -166,7 +166,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
             col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type(1)
-            col_dict['name'] = 'd3mIndex'
+            col_dict['name'] = index
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
             
