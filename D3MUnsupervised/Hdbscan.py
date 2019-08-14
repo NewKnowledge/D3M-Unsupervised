@@ -128,6 +128,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(inputs)[t] for t in targets]
         index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+        index_names = [list(inputs)[i] for i in index]
      
         X_test = inputs.drop(columns = list(inputs)[index[0]])
         X_test = X_test.drop(columns = target_names).values
@@ -137,7 +138,6 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         if series.any().any():
             inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
-        
         
         if self.hyperparams['required_output'] == 'feature':
 
@@ -149,6 +149,7 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             col_dict['name'] = 'cluster_labels'
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
             hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+        
             df_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
             df_dict_1 = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
             df_dict['dimension'] = df_dict_1
@@ -166,13 +167,13 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
             col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type(1)
-            col_dict['name'] = index
+            col_dict['name'] = index_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
             
             col_dict = dict(hdb_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
             col_dict['structural_type'] = type(1)
-            col_dict['name'] = str(target_names[0])
+            col_dict['name'] = target_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
             hdb_df.metadata = hdb_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
             
