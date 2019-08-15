@@ -3,6 +3,9 @@
 ## Hdbscan.py (Hierarchical Density-Based Spatial Clustering of Applications with Noise)
 Wrapper of the DBSCAN and HDBSCAN clustering algorithms into D3M infrastructure. 
 
+## Hdbscan_ts.py 
+Wrapper of the DBSCAN and HDBSCAN clustering algorithms into D3M infrastructure, that can handle time series dataset inputs. 
+
 ## Storc.py 
 Wrapper of the KMeans clustering algorithm into D3M infrastructure. 
 The base implementation of KMeans can be found here: https://github.com/NewKnowledge/sloth
