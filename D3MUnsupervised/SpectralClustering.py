@@ -5,7 +5,7 @@ import pandas
 import typing
 from typing import List
 
-from sklearn.cluster import SpectralClustering
+from sklearn.cluster import SpectralClustering as SC
 from d3m.primitive_interfaces.transformer import TransformerPrimitiveBase
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 
@@ -20,23 +20,27 @@ __author__ = 'Distil'
 __version__ = '1.0.0'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
-Inputs = container.dataset.Dataset
+Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
     n_clusters = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 8, semantic_types = 
-        ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
+        ['https://metadata.datadrivendiscovery.org/types/ControlParameter'], 
         description = 'The dimension of the projection space')
+
     n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 10, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'Number of times the k-means algorithm will be run with different centroid seeds')
+
     n_neighbors = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 10, semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'Number of neighbors when constructing the affintiy matrix using n-neighbors, ignored for affinity="rbf"')   
+
     affinity = hyperparams.Enumeration(default = 'rbf', 
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         values = ['rbf', 'nearest_neighbors'],
         description = 'method to construct affinity matrix')
+
     required_output = hyperparams.Enumeration(default = 'feature',semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         values = ['prediction','feature'],
@@ -98,9 +102,7 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0)-> None:
         super().__init__(hyperparams=hyperparams, random_seed=random_seed)
 
-          
-        self.sc = SpectralClustering(n_clusters = self.hyperparams['n_cluster'], n_init = self.hyperparams['n_cluster'],
-        n_neighbors = self.hyperparams['n_neighbors'], affinity = self.hyperparams['affinity'], random_state=self.random_seed)
+        self.sc = SC(n_clusters=self.hyperparams['n_clusters'],n_init=self.hyperparams['n_init'],n_neighbors=self.hyperparams['n_neighbors'],affinity=self.hyperparams['affinity'],random_state=self.random_seed)
 
 
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
@@ -133,11 +135,11 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
             inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
 
-        sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns = col_names))
+        sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test)))
         
         if self.hyperparams['required_output'] == 'feature':
 
-            sc_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=['cluster_labels']))
+            sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns=['cluster_labels']))
 
             # just add last column of last column ('clusters')
             col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
@@ -186,15 +188,20 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
 if __name__ == '__main__':
 
     # Load data and preprocessing
-    
     hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
-    hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'n_components': 3, 'long_format':True}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
-    print(filepath)
+    hyperparams_class = SpectralClustering.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    sc_client = SpectralClustering(hyperparams=hyperparams_class.defaults())
+    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
-    test_dataset = denorm.produce(inputs = test_dataset).value
-    results = tsne_client.produce(inputs = test_dataset)
+    #read dataset into dataframe
+    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+    test_dataframe = d3m_DataFrame(ds2df_client.produce(inputs = test_dataset).value)   
+    #print(test_dataframe)
+    
+    #test_dataframetest_dataset = denorm.produce(inputs = test_dataframe).value
+    results = sc_client.produce(inputs = test_dataframe)
+    print(type(results.value))
     print(results.value)
