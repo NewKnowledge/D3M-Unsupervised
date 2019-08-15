@@ -125,7 +125,8 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
             targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(inputs)[t] for t in targets]
         index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-     
+        index_names = [list(inputs)[i] for i in index]
+ 
         X_test = inputs.drop(columns = list(inputs)[index[0]])
         X_test = X_test.drop(columns = target_names).values
         
@@ -158,13 +159,13 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
             return CallResult(utils_cp.append_columns(inputs, sc_df))
         else:
             
-            sc_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_predict(X_test), columns=[target_names[0]]))
+            sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns=[target_names[0]]))
 
             sc_df = pandas.concat([inputs.d3mIndex, sc_df], axis=1)
 
             col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type(1)
-            col_dict['name'] = index
+            col_dict['name'] = index_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
             
