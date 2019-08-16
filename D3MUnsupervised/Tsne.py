@@ -146,7 +146,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             # add index colmn metadata
             col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type('1')
-            col_dict['name'] = index
+            col_dict['name'] = index_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Int', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
             tsne_df.metadata = tsne_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 

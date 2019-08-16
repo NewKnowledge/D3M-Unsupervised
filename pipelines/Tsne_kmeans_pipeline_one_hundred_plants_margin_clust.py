@@ -51,8 +51,8 @@ step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_re
 step_6.add_hyperparameter(name='n_clusters', argument_type= ArgumentType.VALUE, data=100)
 step_6.add_hyperparameter(name = 'cluster_col_name', argument_type=ArgumentType.VALUE, data='Class')
 step_6.add_output('produce')
-
 pipeline_description.add_step(step_6)
+
 step_7 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
 step_7.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.6.produce')
 step_7.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
