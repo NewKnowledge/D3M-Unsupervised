@@ -184,7 +184,8 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(metadata_inputs)[t] for t in targets]
         index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-        
+        index_names = [list(metadata_inputs)[i] for i in index]        
+
         # load and reshape training data
         n_ts = len(formatted_inputs.d3mIndex.unique())
         if n_ts == formatted_inputs.shape[0]:
@@ -197,7 +198,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         # special semi-supervised case - during training, only produce rows with labels
         if self.clustering:
             
-            sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = ['Class']))
+            sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = [target_names[0]]))
 
             sloth_df = pandas.concat([formatted_inputs.d3mIndex, sloth_df], axis=1)
 
@@ -205,14 +206,14 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
 
             col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
             col_dict['structural_type'] = type("1")
-            col_dict['name'] = 'd3mIndex'
+            col_dict['name'] = index_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey',)
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
             # second column ('Class')
             col_dict = dict(sloth_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
             col_dict['structural_type'] = type("1")
-            col_dict['name'] = 'Class'
+            col_dict['name'] = target_names[0]
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
             
