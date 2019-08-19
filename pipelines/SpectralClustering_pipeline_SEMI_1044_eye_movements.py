@@ -38,6 +38,7 @@ step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.
 step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.3.produce')
 step_4.add_hyperparameter(name='n_clusters', argument_type=ArgumentType.VALUE,data=3)
 step_4.add_hyperparameter(name='n_neighbors', argument_type=ArgumentType.VALUE,data=6)
+#step_4.add_hyperparameter(name = 'n_init', argument_type=ArgumentType.VALUE,data=20)
 step_4.add_hyperparameter(name='affinity', argument_type=ArgumentType.VALUE,data='nearest_neighbors')
 #step_4.add_hyperparameter(name='required_output', argument_type=ArgumentType.VALUE,data='prediction')
 step_4.add_output('produce')
