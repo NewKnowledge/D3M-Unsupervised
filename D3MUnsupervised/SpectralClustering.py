@@ -25,7 +25,7 @@ Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
     n_clusters = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 8, semantic_types = 
-        ['https://metadata.datadrivendiscovery.org/types/ControlParameter'], 
+        ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], 
         description = 'The dimension of the projection space')
 
     n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default = 10, semantic_types = 
@@ -37,26 +37,26 @@ class Hyperparams(hyperparams.Hyperparams):
         description = 'Number of neighbors when constructing the affintiy matrix using n-neighbors, ignored for affinity="rbf"')   
 
     affinity = hyperparams.Enumeration(default = 'rbf', 
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         values = ['rbf', 'nearest_neighbors'],
         description = 'method to construct affinity matrix')
 
-    required_output = hyperparams.Enumeration(default = 'feature',semantic_types = 
+    task_type = hyperparams.Enumeration(default = 'feature',semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        values = ['prediction','feature'],
+        values = ['clustering','classification'],
         description = 'Determines whether the output is a dataframe with just predictions,\
             or an additional feature added to the input dataframe.')
     pass
 
 class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     '''
-        Primitive that applies the T-distributed stochastic neighbour embedding algorith to time series,
-        unsupervised, supervised or semi-supervised datasets. 
+        Primitive that applies sklearn spectral clustering algorithm to unsupervised, 
+        supervised or semi-supervised datasets. 
         
-        Training inputs: D3M dataset with features and labels, and D3M indices
+        Training inputs: D3M dataframe with features and labels, and D3M indices
 
-        Outputs:For time series data, a dataframe of the inputs with t-SNE dimension columns appended 
-                For everything else - D3M dataframe with t-SNE dimensions and D3M indices
+        Outputs:D3M dataframe with cluster predictions and D3M indices. Clusterlabels are of "suggestTarget" semantic type if
+        the task_type hyperparameter is clustering, and "Attribute" if the task_type is classification.  
     '''
     metadata = metadata_base.PrimitiveMetadata({
         # Simply an UUID generated once and fixed forever. Generated using "uuid.uuid4()".
@@ -136,55 +136,29 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
             inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
             X_test = X_test[np.flatnonzero(series)]
 
-        sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test)))
-        
-        if self.hyperparams['required_output'] == 'feature':
+        sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns=['cluster_labels']))
 
-            sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns=['cluster_labels']))
-
-            # just add last column of last column ('clusters')
-            col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-            col_dict['structural_type'] = type(1)
-            col_dict['name'] = 'cluster_labels'
+        # just add last column of last column ('clusters')
+        col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+        col_dict['structural_type'] = type(1)
+        col_dict['name'] = 'cluster_labels'
+        if self.hyperparams['task_type'] == 'classification':
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
-            sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
-            df_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
-            df_dict_1 = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
-            df_dict['dimension'] = df_dict_1
-            df_dict_1['name'] = 'columns'
-            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-            df_dict_1['length'] = 1        
-            sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
+        else:
+            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
+
+        sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
+        
+        df_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
+        df_dict_1 = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
+        df_dict['dimension'] = df_dict_1
+        df_dict_1['name'] = 'columns'
+        df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
+        df_dict_1['length'] = 1        
+        sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
                 
             return CallResult(utils_cp.append_columns(inputs, sc_df))
-        else:
-            
-            sc_df = d3m_DataFrame(pandas.DataFrame(self.sc.fit_predict(X_test), columns=[target_names[0]]))
-
-            sc_df = pandas.concat([inputs.d3mIndex, sc_df], axis=1)
-
-            col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
-            col_dict['structural_type'] = type(1)
-            col_dict['name'] = index_names[0]
-            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-            sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
-            
-            col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-            col_dict['structural_type'] = type(1)
-            col_dict['name'] = str(target_names[0])
-            col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
-            sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
-            
-            df_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
-            df_dict_1 = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, ))) 
-            df_dict['dimension'] = df_dict_1
-            df_dict_1['name'] = 'columns'
-            df_dict_1['semantic_types'] = ('https://metadata.datadrivendiscovery.org/types/TabularColumn',)
-            df_dict_1['length'] = 2        
-            sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
-
-            return CallResult(sc_df)
-            
+                  
 
 if __name__ == '__main__':
 
