@@ -41,7 +41,7 @@ class Hyperparams(hyperparams.Hyperparams):
         values = ['rbf', 'nearest_neighbors'],
         description = 'method to construct affinity matrix')
 
-    task_type = hyperparams.Enumeration(default = 'feature',semantic_types = 
+    task_type = hyperparams.Enumeration(default = 'classification',semantic_types = 
         ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         values = ['clustering','classification'],
         description = 'Determines whether the output is a dataframe with just predictions,\
@@ -141,12 +141,12 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
         # just add last column of last column ('clusters')
         col_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
         col_dict['structural_type'] = type(1)
-        col_dict['name'] = 'cluster_labels'
         if self.hyperparams['task_type'] == 'classification':
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/Attribute')
+            col_dict['name'] = 'cluster_labels'
         else:
             col_dict['semantic_types'] = ('http://schema.org/Integer', 'https://metadata.datadrivendiscovery.org/types/PredictedTarget')
-
+            col_dict['name'] = target_names[0]
         sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
         
         df_dict = dict(sc_df.metadata.query((metadata_base.ALL_ELEMENTS, )))
@@ -157,7 +157,7 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
         df_dict_1['length'] = 1        
         sc_df.metadata = sc_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
                 
-            return CallResult(utils_cp.append_columns(inputs, sc_df))
+        return CallResult(utils_cp.append_columns(inputs, sc_df))
                   
 
 if __name__ == '__main__':
