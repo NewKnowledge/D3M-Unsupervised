@@ -14,7 +14,6 @@ from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
 
-from .timeseries_formatter import TimeSeriesFormatterPrimitive
 
 __author__ = 'Distil'
 __version__ = '1.0.0'
@@ -90,7 +89,7 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
              ),
         }],
         # The same path the primitive is registered with entry points in setup.py.
-        'python_path': 'd3m.primitives.clustering.spectral_clustering.SpectralClustering',
+        'python_path': 'd3m.primitives.clustering.spectral_graph_clustering.SpectralClustering',
         # Choose these from a controlled vocabulary in the schema. If anything is missing which would
         # best describe the primitive, make a merge request.
         'algorithm_types': [
@@ -109,7 +108,7 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
         """
         Parameters
         ----------
-        inputs : numpy ndarray of size (number_of_time_series, time_series_length) containing new time series 
+        inputs : dataframe 
 
         Returns
         ----------

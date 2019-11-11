@@ -14,13 +14,15 @@ from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
 
+from .timeseries_formatter import TimeSeriesFormatterPrimitive
+
 __author__ = 'Distil'
 __version__ = '2.0.3'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
 
-Inputs = container.pandas.DataFrame
-Outputs = container.pandas.DataFrame
+Inputs = container.dataset.Dataset
+Outputs = container.dataset.Dataset
 
 class Params(params.Params):
     pass
@@ -33,6 +35,9 @@ class Hyperparams(hyperparams.Hyperparams):
     nclusters = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=3, semantic_types=
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'number of clusters \
         to user in kernel kmeans algorithm')
+    long_format = hyperparams.UniformBool(default = False, semantic_types = [
+       'https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+       description="whether the input dataset is already formatted in long format or not")
     n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=10, semantic_types=
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'Number of times the k-means algorithm \
         will be run with different centroid seeds. Final result will be the best output on n_init consecutive runs in terms of inertia')
@@ -92,7 +97,9 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         super().__init__(hyperparams=hyperparams, random_seed=random_seed)
 
         self._X_train = None          # training inputs
-        
+        hp_class = TimeSeriesFormatterPrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        self._hp = hp_class.defaults().replace({'file_col_index':1, 'main_resource_index':'learningData'})
+    
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
         '''
         fits Kmeans clustering algorithm using training data from set_training_data and hyperparameters
@@ -111,14 +118,16 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         Sets primitive's training data
         Parameters
         ----------
-        inputs: d3m dataset containing training time series
+        inputs: numpy ndarray of size (number_of_time_series, time_series_length) containing training time series
         
         '''
         hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
         metadata_inputs = ds2df_client.produce(inputs = inputs).value
-        
-        formatted_inputs = ds2df_client.produce(inputs = inputs).value
+        if not self.hyperparams['long_format']:
+            formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
+        else:
+            formatted_inputs = ds2df_client.produce(inputs = inputs).value
         
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
@@ -149,7 +158,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         """
         Parameters
         ----------
-        inputs : D3M dataframe with associated metadata.
+        inputs : Input pandas frame where each row is a series.  Series timestamps are store in the column names.
 
         Returns
         -------
@@ -161,7 +170,11 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
         metadata_inputs = ds2df_client.produce(inputs = inputs).value
         
-        formatted_inputs = ds2df_client.produce(inputs = inputs).value 
+        # temporary (until Uncharted adds conversion primitive to repo)
+        if not self.hyperparams['long_format']:
+            formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
+        else:
+            formatted_inputs = ds2df_client.produce(inputs = inputs).value 
         
         # store information on target, index variable
         targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
@@ -247,7 +260,7 @@ if __name__ == '__main__':
     input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'n_init':25}))
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':False, 'n_init':25}))
     storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'

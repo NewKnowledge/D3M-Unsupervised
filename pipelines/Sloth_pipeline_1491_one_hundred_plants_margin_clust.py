@@ -43,7 +43,6 @@ step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_re
 step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_hyperparameter(name='nclusters', argument_type= ArgumentType.VALUE, data=100)
 step_5.add_hyperparameter(name='n_init', argument_type= ArgumentType.VALUE, data=20)
-step_5.add_hyperparameter(name='long_format', argument_type= ArgumentType.VALUE, data=True)
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
 

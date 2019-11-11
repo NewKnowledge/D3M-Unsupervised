@@ -40,7 +40,6 @@ pipeline_description.add_step(step_4)
 # Step 5 DISTIL/NK t-SNE primitive -> dimensionality reduction
 step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.dimensionality_reduction.t_distributed_stochastic_neighbor_embedding.Tsne'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
-step_5.add_hyperparameter(name='long_format', argument_type=ArgumentType.VALUE, data=True)
 step_5.add_hyperparameter(name='n_components', argument_type=ArgumentType.VALUE,data=3)
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
