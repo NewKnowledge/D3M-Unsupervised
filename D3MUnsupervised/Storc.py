@@ -215,9 +215,9 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             return CallResult(sloth_df)
 
         else:
-            series = metadata_inputs[target_names] != ''
+            series = inputs[target_names] != ''
             if series.any().any():
-                metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
+                metadata_inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
                 X_test = X_test[np.flatnonzero(series)]
         
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
