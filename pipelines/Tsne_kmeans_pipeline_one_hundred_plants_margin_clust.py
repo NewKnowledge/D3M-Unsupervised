@@ -18,7 +18,7 @@ step_1 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transf
 pipeline_description.add_step(step_1)
 
 #Step 2 mapped to operate on a dataset object instead of a dataframe object
-step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.Common'))
+step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.0.produce')
 step_2.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=1)
 step_2.add_output('produce')
@@ -31,7 +31,7 @@ step_3.add_hyperparameter(name='use_semantic_types', argument_type=ArgumentType.
 pipeline_description.add_step(step_3)
 
 # Step 4 mapped to operate on a dataset object instead of a dataframe object
-step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.Common'))
+step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
 step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.2.produce')
 step_4.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=3)
 step_4.add_output('produce')
