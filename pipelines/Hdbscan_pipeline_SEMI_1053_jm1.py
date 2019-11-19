@@ -20,7 +20,7 @@ step_1.add_output('produce')
 pipeline_description.add_step(step_1)
 
 # Step 2 column parser -> labeled semantic types to data types
-step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
+step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.Common'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.1.produce')
 step_2.add_output('produce')
 pipeline_description.add_step(step_2)
@@ -40,13 +40,13 @@ step_4.add_output('produce')
 pipeline_description.add_step(step_4)
 
 # Step 5: extract feature columns
-step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.extract_columns_by_semantic_types.DataFrameCommon'))
+step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.extract_columns_by_semantic_types.Common'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_output('produce')
 pipeline_description.add_step(step_5)
 
 # Step 6: extract target columns
-step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.extract_columns_by_semantic_types.DataFrameCommon'))
+step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.extract_columns_by_semantic_types.Common'))
 step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_6.add_hyperparameter(name='semantic_types', argument_type=ArgumentType.VALUE,data=('https://metadata.datadrivendiscovery.org/types/Target',))
 step_6.add_output('produce')
@@ -60,7 +60,7 @@ step_7.add_output('produce')
 pipeline_description.add_step(step_7)
 
 # Step 8: construct predictions dataframe in proper format
-step_8 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
+step_8 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.Common'))
 step_8.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.7.produce')
 step_8.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_8.add_output('produce')

@@ -20,7 +20,7 @@ step_1.add_output('produce')
 pipeline_description.add_step(step_1)
 
 # Step 2 column parser -> labeled semantic types to data types
-step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
+step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.Common'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.1.produce')
 step_2.add_output('produce')
 pipeline_description.add_step(step_2)
@@ -41,7 +41,7 @@ step_4.add_output('produce')
 pipeline_description.add_step(step_4)
 
 # Step 5: Gradient boosting classifier
-step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.classification.xgboost_gbtree.DataFrameCommon'))
+step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.classification.xgboost_gbtree.Common'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_argument(name='outputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_output('produce')
@@ -49,7 +49,7 @@ step_5.add_hyperparameter(name='return_result', argument_type=ArgumentType.VALUE
 pipeline_description.add_step(step_5)
 
 # Step 6: construct predictions dataframe in proper format
-step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
+step_6 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.Common'))
 step_6.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
 step_6.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
 step_6.add_output('produce')
@@ -63,16 +63,4 @@ blob = pipeline_description.to_json()
 filename = blob[8:44] + '.json'
 with open(filename, 'w') as outfile:
     outfile.write(blob)
-
-# output dataset metafile (from command line argument)
-metafile = blob[8:44] + '.meta'
-dataset = sys.argv[1]
-with open(metafile, 'w') as outfile:
-    outfile.write('{')
-    outfile.write(f'"problem": "{dataset}_problem",')
-    outfile.write(f'"full_inputs": ["{dataset}_dataset"],')
-    outfile.write(f'"train_inputs": ["{dataset}_dataset_TRAIN"],')
-    outfile.write(f'"test_inputs": ["{dataset}_dataset_TEST"],')
-    outfile.write(f'"score_inputs": ["{dataset}_dataset_SCORE"]')
-    outfile.write('}')
 

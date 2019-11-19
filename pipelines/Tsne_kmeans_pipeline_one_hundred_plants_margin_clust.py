@@ -14,11 +14,11 @@ step_0.add_output('produce')
 pipeline_description.add_step(step_0)
 
 # Step 1 column parser -> labeled semantic types to data types
-step_1 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
+step_1 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.Common'))
 pipeline_description.add_step(step_1)
 
 #Step 2 mapped to operate on a dataset object instead of a dataframe object
-step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
+step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.Common'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.0.produce')
 step_2.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=1)
 step_2.add_output('produce')
@@ -31,7 +31,7 @@ step_3.add_hyperparameter(name='use_semantic_types', argument_type=ArgumentType.
 pipeline_description.add_step(step_3)
 
 # Step 4 mapped to operate on a dataset object instead of a dataframe object
-step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.DataFrameCommon'))
+step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.operator.dataset_map.Common'))
 step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.2.produce')
 step_4.add_hyperparameter(name='primitive', argument_type= ArgumentType.PRIMITIVE, data=3)
 step_4.add_output('produce')
@@ -52,7 +52,7 @@ step_6.add_hyperparameter(name = 'cluster_col_name', argument_type=ArgumentType.
 step_6.add_output('produce')
 pipeline_description.add_step(step_6)
 
-step_7 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
+step_7 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.Common'))
 step_7.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.6.produce')
 step_7.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.5.produce')
 step_7.add_output('produce')
@@ -66,15 +66,3 @@ blob = pipeline_description.to_json()
 filename = blob[8:44] + '.json'
 with open(filename, 'w') as outfile:
     outfile.write(blob)
-
-# output dataset metafile (from command line argument)
-metafile = blob[8:44] + '.meta'
-dataset = sys.argv[1]
-with open(metafile, 'w') as outfile:
-    outfile.write('{')
-    outfile.write(f'"problem": "{dataset}_problem",')
-    outfile.write(f'"full_inputs": ["{dataset}_dataset"],')
-    outfile.write(f'"train_inputs": ["{dataset}_dataset_TRAIN"],')
-    outfile.write(f'"test_inputs": ["{dataset}_dataset_TEST"],')
-    outfile.write(f'"score_inputs": ["{dataset}_dataset_SCORE"]')
-    outfile.write('}')
