@@ -15,7 +15,7 @@ from d3m.metadata import hyperparams, base as metadata_base, params
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
 
 __author__ = 'Distil'
-__version__ = '2.0.4'
+__version__ = '2.0.5'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
 
@@ -128,7 +128,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
         target_names = [list(inputs)[t] for t in targets]
         index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-        
+                
         series = inputs[target_names] != ''
         self.clustering = 0 
         if not series.any().any():
@@ -217,7 +217,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         else:
             series = inputs[target_names] != ''
             if series.any().any():
-                metadata_inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
+                inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
                 X_test = X_test[np.flatnonzero(series)]
         
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
@@ -236,23 +236,29 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             df_dict_1['length'] = 1        
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
        
-            return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
+            return CallResult(utils_cp.append_columns(inputs, sloth_df))
 
 if __name__ == '__main__':
     
     # Load data and preprocessing
     input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TRAIN/dataset_TRAIN/datasetDoc.json')
-    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
-    input_dataset = denorm.produce(inputs = input_dataset).value
+    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+    input_df = ds2df_client.produce(inputs = input_dataset).value
+
+    #input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'n_init':25}))
-    storc_client.set_training_data(inputs = input_dataset, outputs = None)
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'nclusters':100,'n_init':25}))
+    storc_client.set_training_data(inputs = input_df, outputs = None)
     storc_client.fit()
+    
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
-    test_dataset = denorm.produce(inputs = test_dataset).value
-    results = storc_client.produce(inputs = test_dataset)
+    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+    test_df = ds2df_client.produce(inputs = test_dataset).value
+    #test_dataset = denorm.produce(inputs = test_dataset).value
+    results = storc_client.produce(inputs = test_df)
     print(results.value)
     
