@@ -15,7 +15,7 @@ setup(name='D3MUnsupervised',
             'clustering.k_means.Sloth = D3MUnsupervised:Storc',
             'clustering.hdbscan.Hdbscan = D3MUnsupervised:Hdbscan',
             'dimensionality_reduction.t_distributed_stochastic_neighbor_embedding.Tsne = D3MUnsupervised:Tsne',
-            'clustering.spectral_clustering.SpectralClustering = D3MUnsupervised:SpectralClustering',
+            'clustering.spectral_graph_clustering.SpectralClustering = D3MUnsupervised:SpectralClustering',
         ],
     },
 )
