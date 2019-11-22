@@ -16,7 +16,7 @@ from common_primitives import utils as utils_cp, dataset_to_dataframe as Dataset
 
 
 __author__ = 'Distil'
-__version__ = '1.1.0'
+__version__ = '1.0.0'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
 Inputs = container.pandas.DataFrame
