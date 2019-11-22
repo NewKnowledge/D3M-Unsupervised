@@ -20,7 +20,7 @@ step_1.add_output('produce')
 pipeline_description.add_step(step_1)
 
 # Step 2 column parser -> labeled semantic types to data types
-step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.DataFrameCommon'))
+step_2 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.column_parser.Common'))
 step_2.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.1.produce')
 step_2.add_output('produce')
 pipeline_description.add_step(step_2)
@@ -34,7 +34,7 @@ step_3.add_output('produce')
 pipeline_description.add_step(step_3)
 
 # Step 4 DISTIL/NK slkearn spectral clustering primitive -> clustering
-step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.spectral_clustering.SpectralClustering'))
+step_4 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.clustering.spectral_graph_clustering.SpectralClustering'))
 step_4.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.3.produce')
 step_4.add_hyperparameter(name='n_clusters', argument_type=ArgumentType.VALUE,data=100)
 step_4.add_hyperparameter(name='n_neighbors', argument_type=ArgumentType.VALUE,data=14)
@@ -43,7 +43,7 @@ step_4.add_hyperparameter(name='task_type', argument_type=ArgumentType.VALUE,dat
 step_4.add_output('produce')
 pipeline_description.add_step(step_4)
 
-step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.DataFrameCommon'))
+step_5 = PrimitiveStep(primitive=index.get_primitive('d3m.primitives.data_transformation.construct_predictions.Common'))
 step_5.add_argument(name='inputs', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_argument(name='reference', argument_type=ArgumentType.CONTAINER, data_reference='steps.4.produce')
 step_5.add_output('produce')
@@ -57,15 +57,3 @@ blob = pipeline_description.to_json()
 filename = blob[8:44] + '.json'
 with open(filename, 'w') as outfile:
     outfile.write(blob)
-
-# output dataset metafile (from command line argument)
-metafile = blob[8:44] + '.meta'
-dataset = sys.argv[1]
-with open(metafile, 'w') as outfile:
-    outfile.write('{')
-    outfile.write(f'"problem": "{dataset}_problem",')
-    outfile.write(f'"full_inputs": ["{dataset}_dataset"],')
-    outfile.write(f'"train_inputs": ["{dataset}_dataset_TRAIN"],')
-    outfile.write(f'"test_inputs": ["{dataset}_dataset_TEST"],')
-    outfile.write(f'"score_inputs": ["{dataset}_dataset_SCORE"]')
-    outfile.write('}')

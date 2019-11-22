@@ -14,13 +14,15 @@ from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
 
+from .timeseries_formatter import TimeSeriesFormatterPrimitive
+
 __author__ = 'Distil'
-__version__ = '2.0.5'
+__version__ = '2.0.3'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
 
-Inputs = container.pandas.DataFrame
-Outputs = container.pandas.DataFrame
+Inputs = container.dataset.Dataset
+Outputs = container.dataset.Dataset
 
 class Params(params.Params):
     pass
@@ -33,6 +35,9 @@ class Hyperparams(hyperparams.Hyperparams):
     nclusters = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=3, semantic_types=
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'number of clusters \
         to user in kernel kmeans algorithm')
+    long_format = hyperparams.UniformBool(default = False, semantic_types = [
+       'https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+       description="whether the input dataset is already formatted in long format or not")
     n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=10, semantic_types=
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'Number of times the k-means algorithm \
         will be run with different centroid seeds. Final result will be the best output on n_init consecutive runs in terms of inertia')
@@ -92,7 +97,9 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         super().__init__(hyperparams=hyperparams, random_seed=random_seed)
 
         self._X_train = None          # training inputs
-        
+        hp_class = TimeSeriesFormatterPrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        self._hp = hp_class.defaults().replace({'file_col_index':1, 'main_resource_index':'learningData'})
+    
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
         '''
         fits Kmeans clustering algorithm using training data from set_training_data and hyperparameters
@@ -111,45 +118,47 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         Sets primitive's training data
         Parameters
         ----------
-        inputs: d3m dataset containing training time series
+        inputs: numpy ndarray of size (number_of_time_series, time_series_length) containing training time series
         
         '''
-        #hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        #ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-        #metadata_inputs = ds2df_client.produce(inputs = inputs).value
-        
-        #formatted_inputs = ds2df_client.produce(inputs = inputs).value
+        hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+        metadata_inputs = ds2df_client.produce(inputs = inputs).value
+        if not self.hyperparams['long_format']:
+            formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
+        else:
+            formatted_inputs = ds2df_client.produce(inputs = inputs).value
         
         # store information on target, index variable
-        targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+        targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
-        target_names = [list(inputs)[t] for t in targets]
-        index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-                
-        series = inputs[target_names] != ''
+            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
+        target_names = [list(metadata_inputs)[t] for t in targets]
+        index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+        
+        series = metadata_inputs[target_names] != ''
         self.clustering = 0 
         if not series.any().any():
             self.clustering = 1
 
         # load and reshape training data
-        n_ts = len(inputs.d3mIndex.unique())
-        if n_ts == inputs.shape[0]:
+        n_ts = len(formatted_inputs.d3mIndex.unique())
+        if n_ts == formatted_inputs.shape[0]:
             self._kmeans = sk_kmeans(n_clusters = self.hyperparams['nclusters'], n_init = self.hyperparams['n_init'], random_state=self.random_seed)
-            self._X_train_all_data = inputs.drop(columns = list(inputs)[index[0]])
+            self._X_train_all_data = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
             self._X_train = self._X_train_all_data.drop(columns = target_names).values
         else:
             self._kmeans = KMeans(self.hyperparams['nclusters'], self.hyperparams['algorithm'])
-            ts_sz = int(inputs.shape[0] / n_ts)
-            self._X_train = np.array(inputs.value).reshape(n_ts, ts_sz, 1)
+            ts_sz = int(formatted_inputs.shape[0] / n_ts)
+            self._X_train = np.array(formatted_inputs.value).reshape(n_ts, ts_sz, 1)
 
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[container.pandas.DataFrame]:
         """
         Parameters
         ----------
-        inputs : D3M dataframe with associated metadata.
+        inputs : Input pandas frame where each row is a series.  Series timestamps are store in the column names.
 
         Returns
         -------
@@ -157,37 +166,41 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             For unsupervised problems: The output is a dataframe containing a single column where each entry is the associated series' cluster number.
             For semi-supervised problems: The output is the input df containing an additional feature - cluster_label
         """
-        #hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        #ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-        #metadata_inputs = ds2df_client.produce(inputs = inputs).value
+        hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+        metadata_inputs = ds2df_client.produce(inputs = inputs).value
         
-        #formatted_inputs = ds2df_client.produce(inputs = inputs).value 
+        # temporary (until Uncharted adds conversion primitive to repo)
+        if not self.hyperparams['long_format']:
+            formatted_inputs = TimeSeriesFormatterPrimitive(hyperparams = self._hp).produce(inputs = inputs).value['0']
+        else:
+            formatted_inputs = ds2df_client.produce(inputs = inputs).value 
         
         # store information on target, index variable
-        targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+        targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
-        target_names = [list(inputs)[t] for t in targets]
-        index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-        index_names = [list(inputs)[i] for i in index]        
+            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
+        target_names = [list(metadata_inputs)[t] for t in targets]
+        index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+        index_names = [list(metadata_inputs)[i] for i in index]        
 
         # load and reshape training data
-        n_ts = len(inputs.d3mIndex.unique())
-        if n_ts == inputs.shape[0]:
-            X_test = inputs.drop(columns = list(inputs)[index[0]])
+        n_ts = len(formatted_inputs.d3mIndex.unique())
+        if n_ts == formatted_inputs.shape[0]:
+            X_test = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
             X_test = X_test.drop(columns = target_names).values
         else:
-            ts_sz = int(inputs.shape[0] / n_ts)
-            X_test = np.array(inputs.value).reshape(n_ts, ts_sz, 1)       
+            ts_sz = int(formatted_inputs.shape[0] / n_ts)
+            X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz, 1)       
         
         # special semi-supervised case - during training, only produce rows with labels
         if self.clustering:
             
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns = [target_names[0]]))
 
-            sloth_df = pandas.concat([inputs.d3mIndex, sloth_df], axis=1)
+            sloth_df = pandas.concat([formatted_inputs.d3mIndex, sloth_df], axis=1)
 
             # first column ('d3mTndex')
 
@@ -215,9 +228,9 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             return CallResult(sloth_df)
 
         else:
-            series = inputs[target_names] != ''
+            series = metadata_inputs[target_names] != ''
             if series.any().any():
-                inputs = dataframe_utils.select_rows(inputs, np.flatnonzero(series))
+                metadata_inputs = dataframe_utils.select_rows(metadata_inputs, np.flatnonzero(series))
                 X_test = X_test[np.flatnonzero(series)]
         
             sloth_df = d3m_DataFrame(pandas.DataFrame(self._kmeans.predict(X_test), columns=['cluster_labels']))
@@ -236,29 +249,23 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             df_dict_1['length'] = 1        
             sloth_df.metadata = sloth_df.metadata.update((metadata_base.ALL_ELEMENTS,), df_dict)
        
-            return CallResult(utils_cp.append_columns(inputs, sloth_df))
+            return CallResult(utils_cp.append_columns(metadata_inputs, sloth_df))
 
 if __name__ == '__main__':
     
     # Load data and preprocessing
     input_dataset = container.Dataset.load('file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TRAIN/dataset_TRAIN/datasetDoc.json')
-    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-    input_df = ds2df_client.produce(inputs = input_dataset).value
-
-    #input_dataset = denorm.produce(inputs = input_dataset).value
+    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+    input_dataset = denorm.produce(inputs = input_dataset).value
 
     hyperparams_class = Storc.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'nclusters':100,'n_init':25}))
-    storc_client.set_training_data(inputs = input_df, outputs = None)
+    storc_client = Storc(hyperparams = hyperparams_class.defaults().replace({'algorithm':'TimeSeriesKMeans','nclusters':100,'long_format':False, 'n_init':25}))
+    storc_client.set_training_data(inputs = input_dataset, outputs = None)
     storc_client.fit()
-    
     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
     test_dataset = container.Dataset.load(filepath)
-    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-    test_df = ds2df_client.produce(inputs = test_dataset).value
-    #test_dataset = denorm.produce(inputs = test_dataset).value
-    results = storc_client.produce(inputs = test_df)
+    test_dataset = denorm.produce(inputs = test_dataset).value
+    results = storc_client.produce(inputs = test_dataset)
     print(results.value)
     

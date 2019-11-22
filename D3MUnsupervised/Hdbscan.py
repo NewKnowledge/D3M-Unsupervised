@@ -14,7 +14,6 @@ from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
-from .timeseries_formatter import TimeSeriesFormatterPrimitive
 
 __author__ = 'Distil'
 __version__ = '1.0.2'
@@ -52,7 +51,7 @@ class Hyperparams(hyperparams.Hyperparams):
 class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     '''
         Primitive that applies Hierarchical Density-Based Clustering or Density-Based Clustering 
-        algorithms to time series data. This is an unsupervised, clustering primitive, but has been
+        algorithms. This is an unsupervised, clustering primitive, but has been
         representend as a supervised classification problem to produce a compliant primitive. 
 
         Training inputs: D3M dataset with features and labels, and D3M indices
@@ -117,7 +116,8 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         Returns
         ----------
         Outputs
-            The output is a dataframe containing a single column where each entry is the associated series' cluster number.
+            The output depends on the required_output hyperparameter and is either a dataframe containing a single column 
+            where each entry is the cluster ID, or the input daatframe with the cluster ID of each row added as an additional feature. 
         """ 
         
         # find target and index variables
