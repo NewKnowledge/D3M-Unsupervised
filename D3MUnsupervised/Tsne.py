@@ -16,7 +16,7 @@ from common_primitives import utils as utils_cp, dataset_to_dataframe as Dataset
 
 
 __author__ = 'Distil'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __contact__ = 'mailto:nklabs@newknowledge.com'
 
 Inputs = container.pandas.DataFrame
@@ -95,30 +95,25 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         Outputs
             D3M dataframe with t-SNE dimensions and D3M indices
         """ 
-    
-        hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-        metadata_inputs = ds2df_client.produce(inputs = inputs).value
-
-        formatted_inputs = d3m_DataFrame(ds2df_client.produce(inputs = inputs).value)        
+       
         
         # store information on target, index variable
-        targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+        targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
+            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/TrueTarget')
         if not len(targets):
-            targets = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
-        target_names = [list(metadata_inputs)[t] for t in targets]
-        index = metadata_inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
-        index_names = [list(metadata_inputs)[i] for i in index]
+            targets = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/SuggestedTarget')
+        target_names = [list(inputs)[t] for t in targets]
+        index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+        index_names = [list(inputs)[i] for i in index]
         
-        n_ts = len(formatted_inputs.d3mIndex.unique())
-        if n_ts == formatted_inputs.shape[0]:
-            X_test = formatted_inputs.drop(columns = list(formatted_inputs)[index[0]])
+        n_ts = len(inputs.d3mIndex.unique())
+        if n_ts == inputs.shape[0]:
+            X_test = inputs.drop(columns = list(inputs)[index[0]])
             X_test = X_test.drop(columns = target_names).values
         else:
-            ts_sz = int(formatted_inputs.shape[0] / n_ts)
-            X_test = np.array(formatted_inputs.value).reshape(n_ts, ts_sz)
+            ts_sz = int(inputs.shape[0] / n_ts)
+            X_test = np.array(inputs.value).reshape(n_ts, ts_sz)
 
         # fit_transform data and create new dataframe
         n_components = self.hyperparams['n_components']
@@ -126,7 +121,7 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         tsne_df = d3m_DataFrame(pandas.DataFrame(self.clf.fit_transform(X_test), columns = col_names))
         
-        tsne_df = pandas.concat([formatted_inputs.d3mIndex, tsne_df], axis=1)
+        tsne_df = pandas.concat([inputs.d3mIndex, tsne_df], axis=1)
             
         # add index colmn metadata
         col_dict = dict(tsne_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
