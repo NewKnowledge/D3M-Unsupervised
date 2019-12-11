@@ -129,9 +129,13 @@ class Hdbscan(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         target_names = [list(inputs)[t] for t in targets]
         index = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/PrimaryKey')
         index_names = [list(inputs)[i] for i in index]
-     
-        X_test = inputs.drop(columns = list(inputs)[index[0]])
-        X_test = X_test.drop(columns = target_names).values
+
+        X_test = inputs.copy()
+        if len(index):
+            X_test = X_test.drop(columns=list(inputs)[index[0]])
+        if len(target_names):
+            X_test = X_test.drop(columns=target_names)
+        X_test = X_test.values
         
         # special semi-supervised case - during training, only produce rows with labels
         series = inputs[target_names] != ''
