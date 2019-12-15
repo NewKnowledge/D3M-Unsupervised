@@ -3,10 +3,10 @@ import os.path
 import numpy as np
 import pandas as pd
 import functools
-import typing
+from typing import List, Union, Optional, Tuple
 
 from Sloth.cluster import KMeans
-from tslearn.datasets import CachedDatasets
+from tslearn import utils as ts_utils
 
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 
@@ -37,17 +37,17 @@ class Hyperparams(hyperparams.Hyperparams):
     n_init = hyperparams.UniformInt(lower=1, upper=sys.maxsize, default=10, semantic_types=
         ['https://metadata.datadrivendiscovery.org/types/TuningParameter'], description = 'Number of times the k-means algorithm \
         will be run with different centroid seeds. Final result will be the best output on n_init consecutive runs in terms of inertia')
-    time_col_index = hyperparams.Hyperparameter[typing.Union[int, None]](
+    time_col_index = hyperparams.Hyperparameter[Union[int, None]](
         default=None,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description='Index of column in input dataframe containing timestamps.'
     )
-    value_col_index = hyperparams.Hyperparameter[typing.Union[int, None]](
+    value_col_index = hyperparams.Hyperparameter[Union[int, None]](
         default=None,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description='Index of column in input dataframe containing the values associated with the timestamps.'
     )
-    grouping_col_index = hyperparams.Hyperparameter[typing.Union[int, None]](
+    grouping_col_index = hyperparams.Hyperparameter[Union[int, None]](
         default=None,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description='Index of column in input dataframe containing the values used to mark timeseries groups'
@@ -109,15 +109,19 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         'primitive_family': metadata_base.PrimitiveFamily.CLUSTERING,
     })
 
+
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0)-> None:
         super().__init__(hyperparams=hyperparams, random_seed=random_seed)
 
+        self._kmeans = KMeans(self.hyperparams['nclusters'], self.hyperparams['algorithm'])
+        self._grouping_key_col: Optional[int] = None
+        self._timestamp_col: Optional[int] = None
+        self._value_col: Optional[int] = None
+
+
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
-        '''
-        fits Kmeans clustering algorithm using training data from set_training_data and hyperparameters
-        '''
-        self._kmeans.fit(self._X_train)
         return CallResult(None)
+
 
     def get_params(self) -> Params:
         return self._params
@@ -140,53 +144,14 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             For unsupervised problems: The output is a dataframe containing a single column where each entry is the associated series' cluster number.
             For semi-supervised problems: The output is the input df containing an additional feature - cluster_label
         """
-                # if the grouping col isn't set infer based on presence of grouping key
-        grouping_key_cols = self.hyperparams.get('grouping_col_index', None)
-        if grouping_key_cols is None:
-            grouping_key_cols = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/GroupingKey',))
-            if grouping_key_cols:
-                grouping_key_col = grouping_key_cols[0]
-            else:
-                # if no grouping key is specified we can't split, and therefore we can't cluster.
-                return None
-        else:
-            grouping_key_col = grouping_key_cols[0]
 
-        # if the timestamp col isn't set infer based on presence of the Time role
-        timestamp_cols = self.hyperparams.get('timestamp_col_index', None)
-        if timestamp_cols is None:
-            timestamp_col = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/Time',))[0]
-        else:
-            timestamp_col = timestamp_cols[0]
+        # generate the clusters
+        self._get_columns(inputs)
+        clusters = self._get_clusters(inputs)
 
-        # if the value col isn't set, take the first integer/float attribute we come across that isn't the grouping or timestamp col
-        value_cols = self.hyperparams.get('value_col_index', None)
-        if value_cols is None:
-            attribute_cols = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/Attribute',))
-            numerical_cols = inputs.metadata.list_columns_with_semantic_types(('http://schema.org/Integer', 'http://schema.org/Float'))
-
-            for idx in numerical_cols:
-                if idx != grouping_key_col and idx != timestamp_col and idx in attribute_cols:
-                    value_col = idx
-                    break
-                value_col = -1
-        else:
-            value_col = value_cols[0]
-
-        # split the long form series out into individual series and reshape for consumption
-        # by ts learn
-        groups = inputs.groupby(inputs.columns[grouping_key_col])
-        values = [group.iloc[:, value_col].values for _, group in groups]
-        keys = [group_name for group_name, _ in groups]
-
-        # cluster the data
-        self._kmeans = KMeans(self.hyperparams['nclusters'], self.hyperparams['algorithm'])
-        self._kmeans.fit(values)
-        clusters = self._kmeans.predict(values)
-        
         # append the cluster column
-        clusters = pd.DataFrame(list(zip(keys, self._kmeans.predict(values))), columns=('key', self.hyperparams['output_col_name']))
-        outputs = inputs.join(clusters.set_index('key'), on=inputs.columns[grouping_key_col])
+        cluster_df = pd.DataFrame(clusters, columns=('key', self.hyperparams['output_col_name']))
+        outputs = inputs.join(cluster_df.set_index('key'), on=inputs.columns[self._grouping_key_col])
         outputs.metadata = outputs.metadata.generate(outputs)
 
         # update the new column metadata
@@ -197,3 +162,74 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
         outputs.metadata = outputs.metadata.add_semantic_type((metadata_base.ALL_ELEMENTS, len(outputs.columns)-1), 'http://schema.org/Integer')
 
         return CallResult(outputs)
+
+
+    def produce_clusters(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[container.pandas.DataFrame]:
+        # generate the clusters
+        self._get_columns(inputs)
+        clusters = self._get_clusters(inputs)
+
+        # generate the response df
+        cluster_df = container.DataFrame(clusters, columns=('key', self.hyperparams['output_col_name']), generate_metadata=True)
+        return CallResult(cluster_df)
+
+
+    def _get_columns(self, inputs: Inputs) -> None:
+        # if the grouping col isn't set infer based on presence of grouping key
+        grouping_key_cols = self.hyperparams.get('grouping_col_index', None)
+        if grouping_key_cols is None:
+            grouping_key_cols = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/GroupingKey',))
+            if grouping_key_cols:
+                self._grouping_key_col = grouping_key_cols[0]
+            else:
+                # if no grouping key is specified we can't split, and therefore we can't cluster.
+                return None
+        else:
+            self._grouping_key_col = grouping_key_cols[0]
+
+        # if the timestamp col isn't set infer based on presence of the Time role
+        timestamp_cols = self.hyperparams.get('timestamp_col_index', None)
+        if timestamp_cols is None:
+            self._timestamp_col = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/Time',))[0]
+        else:
+            self._timestamp_col = timestamp_cols[0]
+
+        # if the value col isn't set, take the first integer/float attribute we come across that isn't the grouping or timestamp col
+        value_cols = self.hyperparams.get('value_col_index', None)
+        if value_cols is None:
+            attribute_cols = inputs.metadata.list_columns_with_semantic_types(('https://metadata.datadrivendiscovery.org/types/Attribute',))
+            numerical_cols = inputs.metadata.list_columns_with_semantic_types(('http://schema.org/Integer', 'http://schema.org/Float'))
+
+            for idx in numerical_cols:
+                if idx != self._grouping_key_col and idx != self._timestamp_col and idx in attribute_cols:
+                    self._value_col = idx
+                    break
+                self._value_col = -1
+        else:
+            self._value_col = value_cols[0]
+
+
+    def _get_clusters(self, inputs: Inputs) -> List[Tuple[str, int]]:
+        # split the long form series out into individual series
+        groups = inputs.groupby(inputs.columns[self._grouping_key_col])
+
+        # we need the lengths to be the same to keep tslearn happy
+        max_length = max([len(group) for _, group in groups])
+
+        timeseries = []
+        for group_name, group in groups:
+            # Ensure timeseries are list of floating point values of the same size.  Pad the ends out with NaNs and then
+            # interpolate all missing data.
+            timeseries_values = (group.iloc[:, self._value_col]).astype(float)
+            timeseries_padded = (timeseries_values.append(pd.Series([np.nan] * (max_length - timeseries_values.shape[0]))))
+            timeseries_padded.interpolate(inplace=True)
+            timeseries.append(timeseries_padded)
+
+        keys = [group_name for group_name, _ in groups]
+
+        # cluster the data
+        timeseries_dataset = ts_utils.to_time_series_dataset(timeseries) # needed to get rid of tslearn dimension warning
+        self._kmeans.fit(timeseries_dataset)
+        clusters = self._kmeans.predict(timeseries_dataset)
+
+        return list(zip(keys, clusters))

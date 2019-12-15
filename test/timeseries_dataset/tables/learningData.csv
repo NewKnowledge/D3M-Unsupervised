@@ -1,10 +1,10 @@
 d3mIndex,key,time,count
 1,alpha,0,10
-2,alpha,1,10
+2,alpha,1,11
 3,alpha,2,10
-4,alpha,3,10
+4,alpha,3,11
 5,alpha,4,10
-6,alpha,5,10
+6,alpha,5,11
 7,bravo,0,1000
 8,bravo,1,1000
 9,bravo,2,1000
@@ -22,4 +22,3 @@ d3mIndex,key,time,count
 21,delta,2,10001
 22,delta,3,10001
 23,delta,4,10001
-24,delta,5,10001
