@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='D3MUnsupervised',
-    version='1.0.0',
+    version='1.0.1',
     description='Three wrappers for unsupervised clustering algorithms, one wrapper for t-SNE',
     packages=['D3MUnsupervised'],
     install_requires=["typing",

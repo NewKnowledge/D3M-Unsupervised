@@ -91,7 +91,7 @@ class Storc(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
             {
             'type': metadata_base.PrimitiveInstallationType.PIP,
             'package': 'cython',
-            'version': '0.29.7',
+            'version': '0.29.14',
             },
             {
             'type': metadata_base.PrimitiveInstallationType.PIP,
