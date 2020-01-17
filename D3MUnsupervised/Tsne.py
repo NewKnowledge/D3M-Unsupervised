@@ -12,7 +12,7 @@ from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
-from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
+from common_primitives import utils as utils_cp, dataframe_utils
 
 
 __author__ = 'Distil'
@@ -150,18 +150,18 @@ class Tsne(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
             
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    # Load data and preprocessing
+#     # Load data and preprocessing
     
-    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+#     hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
-    hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'n_components': 3}))
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
-    print(filepath)
-    test_dataset = container.Dataset.load(filepath)
-    test_dataset = denorm.produce(inputs = test_dataset).value
-    results = tsne_client.produce(inputs = test_dataset)
-    print(results.value)
+#     hyperparams_class = Tsne.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     tsne_client = Tsne(hyperparams=hyperparams_class.defaults().replace({'n_components': 3}))
+#     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
+#     print(filepath)
+#     test_dataset = container.Dataset.load(filepath)
+#     test_dataset = denorm.produce(inputs = test_dataset).value
+#     results = tsne_client.produce(inputs = test_dataset)
+#     print(results.value)

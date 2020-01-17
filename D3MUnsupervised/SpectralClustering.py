@@ -12,7 +12,7 @@ from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import hyperparams, base as metadata_base, params
-from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame, dataframe_utils, denormalize
+from common_primitives import utils as utils_cp, dataframe_utils
 
 
 __author__ = 'Distil'
@@ -159,23 +159,23 @@ class SpectralClustering(TransformerPrimitiveBase[Inputs, Outputs, Hyperparams])
         return CallResult(utils_cp.append_columns(inputs, sc_df))
                   
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    # Load data and preprocessing
-    hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+#     # Load data and preprocessing
+#     hyperparams_class = denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     denorm = denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
     
-    hyperparams_class = SpectralClustering.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    sc_client = SpectralClustering(hyperparams=hyperparams_class.defaults())
-    filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
-    test_dataset = container.Dataset.load(filepath)
-    #read dataset into dataframe
-    hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
-    test_dataframe = d3m_DataFrame(ds2df_client.produce(inputs = test_dataset).value)   
-    #print(test_dataframe)
+#     hyperparams_class = SpectralClustering.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     sc_client = SpectralClustering(hyperparams=hyperparams_class.defaults())
+#     filepath = 'file:///home/alexmably/datasets/seed_datasets_unsupervised/1491_one_hundred_plants_margin_clust/TEST/dataset_TEST/datasetDoc.json'
+#     test_dataset = container.Dataset.load(filepath)
+#     #read dataset into dataframe
+#     hyperparams_class = DatasetToDataFrame.DatasetToDataFramePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = hyperparams_class.defaults().replace({"dataframe_resource":"learningData"}))
+#     test_dataframe = d3m_DataFrame(ds2df_client.produce(inputs = test_dataset).value)   
+#     #print(test_dataframe)
     
-    #test_dataframetest_dataset = denorm.produce(inputs = test_dataframe).value
-    results = sc_client.produce(inputs = test_dataframe)
-    print(type(results.value))
-    print(results.value)
+#     #test_dataframetest_dataset = denorm.produce(inputs = test_dataframe).value
+#     results = sc_client.produce(inputs = test_dataframe)
+#     print(type(results.value))
+#     print(results.value)
