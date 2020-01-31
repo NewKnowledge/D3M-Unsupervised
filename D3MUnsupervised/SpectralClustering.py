@@ -17,7 +17,7 @@ from common_primitives import utils as utils_cp, dataframe_utils
 
 __author__ = 'Distil'
 __version__ = '1.0.0'
-__contact__ = 'mailto:nklabs@newknowledge.com'
+__contact__ = 'mailto:jeffrey.gleason@yonder.co'
 
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
